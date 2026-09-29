@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Captação de Vendas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+</head><body>
+<style>
+/* Layout: painel operacional — faixa de fontes (plataformas) no topo, totais, depois o livro de vendas normalizado com painel lateral de detalhe */
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --surface-2:#eef0ed; --line:#dde1dc;
+  --fg:#1c2421; --muted:#5f6b66; --accent:#1f6f5c; --accent-soft:#dcefe8;
+  --ok:#1f7a4d; --ok-soft:#dff3e7; --warn:#a0620b; --warn-soft:#fbefd9;
+  --bad:#b3372e; --bad-soft:#fbe3e0; --info:#2d5d9f; --info-soft:#e1ebf8;
+  --font-ui:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121715; --surface:#1a211e; --surface-2:#222b27; --line:#2e3833;
+  --fg:#e5ebe8; --muted:#95a39d; --accent:#5cc4a4; --accent-soft:#1d3a32;
+  --ok:#6fd39c; --ok-soft:#1c3527; --warn:#e6b35c; --warn-soft:#3a2d17;
+  --bad:#f08a80; --bad-soft:#3d2220; --info:#8db6ee; --info-soft:#1f2c40; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121715; --surface:#1a211e; --surface-2:#222b27; --line:#2e3833;
+  --fg:#e5ebe8; --muted:#95a39d; --accent:#5cc4a4; --accent-soft:#1d3a32;
+  --ok:#6fd39c; --ok-soft:#1c3527; --warn:#e6b35c; --warn-soft:#3a2d17;
+  --bad:#f08a80; --bad-soft:#3d2220; --info:#8db6ee; --info-soft:#1f2c40; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:14px;line-height:1.45}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:20px;padding-block:20px 48px;display:flex;flex-direction:column;gap:20px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{margin:2px 0 0;font-size:24px;font-weight:700;text-wrap:balance}
+.beta{display:inline-block;margin-left:8px;vertical-align:middle;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
+.note{font-size:12.5px;color:var(--muted);max-width:62ch}
+.controls{display:flex;flex-wrap:wrap;gap:8px}
+select,input[type=search]{font:inherit;font-size:13px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+input[type=search]{width:220px;max-width:100%}
+select:focus-visible,input:focus-visible,button:focus-visible,tr:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* plataformas */
+.sources{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.src{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.src-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.src-name{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+.mono-badge{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--surface-2);color:var(--fg)}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ok);font-weight:600}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.live.stale{color:var(--warn)} .live.stale::before{background:var(--warn)}
+.src-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.src-stats div{display:flex;flex-direction:column}
+.src-stats b{font-size:16px;font-variant-numeric:tabular-nums}
+.src-stats span{font-size:11.5px;color:var(--muted)}
+.src-foot{font-size:12px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.src-foot code{font-family:var(--font-mono);font-size:11.5px}
+
+/* totais */
+.totals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.totals div{padding:12px 16px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--line)}
+.totals div:last-child{border-right:0}
+.totals span{font-size:12px;color:var(--muted)}
+.totals b{font-size:19px;font-variant-numeric:tabular-nums;font-weight:700}
+.totals .neg b{color:var(--bad)}
+.totals .main b{color:var(--accent)}
+
+/* livro */
+.ledger{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel-head h2{margin:0;font-size:14px;font-weight:700}
+.panel-head small{color:var(--muted);font-size:12px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface)}
+td{padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr.sel{background:var(--accent-soft)}
+td.num,th.num{text-align:right}
+.id{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.prod{max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.plat{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.plat i{font-style:normal;width:18px;height:18px;border-radius:5px;background:var(--surface-2);display:grid;place-items:center;font-size:10px;font-weight:700}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11.5px;font-weight:600}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)}
+.p-info{background:var(--info-soft);color:var(--info)}
+.p-mute{background:var(--surface-2);color:var(--muted)}
+.empty{padding:32px 16px;text-align:center;color:var(--muted)}
+
+/* detalhe */
+.detail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.detail-body{padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:13px}
+dt{color:var(--muted)} dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
+.sec-title{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px}
+.map{display:flex;flex-direction:column;gap:4px;font-size:12.5px}
+.map div{display:grid;grid-template-columns:1fr 16px 1fr;gap:6px;align-items:center}
+.map code{font-family:var(--font-mono);font-size:11.5px;background:var(--surface-2);padding:2px 6px;border-radius:5px;overflow-wrap:anywhere}
+.map .arrow{color:var(--muted);text-align:center}
+pre{margin:0;font-family:var(--font-mono);font-size:11.5px;background:var(--surface-2);border-radius:8px;padding:10px 12px;overflow-x:auto;max-height:220px;line-height:1.5}
+.tabs{display:flex;gap:4px}
+.tabs button{font:inherit;font-size:12px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:7px;padding:4px 10px;cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+
+/* fluxo */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.flow div{padding:12px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:3px}
+.flow div:last-child{border-right:0}
+.flow b{font-size:13px}
+.flow span{font-size:12px;color:var(--muted)}
+.flow .step{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+
+@media (max-width:1000px){
+  .ledger{grid-template-columns:1fr}
+  .detail{position:static}
+  .totals{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .totals div:nth-child(3){border-right:0}
+  .totals div:nth-child(n+4){border-top:1px solid var(--line)}
+}
+@media (max-width:760px){
+  .sources{grid-template-columns:1fr}
+  .flow{grid-template-columns:1fr 1fr}
+  .flow div:nth-child(2){border-right:0}
+  .flow div:nth-child(n+3){border-top:1px solid var(--line)}
+}
+@media (max-width:480px){
+  .wrap{padding-inline:16px}
+  .totals{grid-template-columns:1fr 1fr}
+  .totals div{border-right:1px solid var(--line)!important;border-top:1px solid var(--line)}
+  .totals div:nth-child(2n){border-right:0!important}
+  .totals div:nth-child(-n+2){border-top:0}
+  .flow{grid-template-columns:1fr}
+  .flow div{border-right:0!important;border-top:1px solid var(--line)}
+  .flow div:first-child{border-top:0}
+  input[type=search]{width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Automação faturamento · Contas a receber</div>
+      <h1>Captação de vendas <span class="beta">Prévia beta</span></h1>
+      <p class="note">Vendas da Hotmart, Ticto e Assiny chegam por webhook, são convertidas para um formato único e ligadas à empresa emissora. Todos os dados abaixo são exemplos fictícios.</p>
+    </div>
+    <div class="controls">
+      <label class="sr" hidden for="f-emp">Empresa</label>
+      <select id="f-emp" aria-label="Empresa"></select>
+      <select id="f-plat" aria-label="Plataforma">
+        <option value="">Todas as plataformas</option>
+        <option>Hotmart</option><option>Ticto</option><option>Assiny</option>
+      </select>
+      <select id="f-status" aria-label="Status">
+        <option value="">Todos os status</option>
+        <option value="aprovada">Aprovada</option>
+        <option value="aguardando">Aguardando pagamento</option>
+        <option value="reembolsada">Reembolsada</option>
+        <option value="chargeback">Chargeback</option>
+        <option value="cancelada">Cancelada</option>
+      </select>
+      <input type="search" id="f-q" placeholder="Buscar produto, comprador ou ID" aria-label="Buscar">
+    </div>
+  </header>
+
+  <section class="flow" aria-label="Como a venda entra no sistema">
+    <div><span class="step">1 · Recebe</span><b>Webhook da plataforma</b><span>Cada evento de compra chega em tempo real</span></div>
+    <div><span class="step">2 · Normaliza</span><b>Formato único</b><span>Status, valores e taxas no mesmo padrão</span></div>
+    <div><span class="step">3 · Classifica</span><b>Empresa emissora</b><span>Pelo produto, conforme a regra fiscal de cada empresa</span></div>
+    <div><span class="step">4 · Encaminha</span><b>Fila de notas</b><span>Vendas aprovadas vão para emissão na Notazz</span></div>
+  </section>
+
+  <section class="sources" id="sources" aria-label="Plataformas conectadas"></section>
+
+  <section class="totals" id="totals" aria-label="Totais do filtro"></section>
+
+  <section class="ledger">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Vendas captadas</h2>
+        <small id="count"></small>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Plataforma</th><th>Transação</th><th>Produto</th><th>Comprador</th>
+            <th>Pagamento</th><th class="num">Bruto</th><th class="num">Taxa</th><th class="num">Líquido</th>
+            <th>Status</th><th>Empresa</th><th>Nota fiscal</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty" id="empty" hidden>Nenhuma venda com esses filtros.</div>
+      </div>
+    </div>
+
+    <aside class="panel detail" aria-live="polite">
+      <div class="panel-head"><h2>Detalhe da venda</h2><small id="d-id"></small></div>
+      <div class="detail-body" id="detail"></div>
+    </aside>
+  </section>
+</div>
+
+<script>
+const EMPRESAS = ["Empresa A (exemplo)","Empresa B (exemplo)","Empresa C (exemplo)"];
+const PRODUTOS = [
+  {nome:"Curso Leilão de Imóveis do Zero",preco:997,emp:0},
+  {nome:"Mentoria Arrematante Pro",preco:2497,emp:1},
+  {nome:"Workshop Due Diligence em Leilões",preco:297,emp:0},
+  {nome:"Comunidade Smart (assinatura mensal)",preco:97,emp:2},
+  {nome:"E-book Checklist do Edital",preco:47,emp:2},
+  {nome:"Imersão Leilão Judicial",preco:1497,emp:1}
+];
+const NOMES = ["Mariana Costa","Rafael Lima","Juliana Alves","Bruno Rocha","Patrícia Nunes","Diego Martins","Camila Ferreira","Thiago Souza","Aline Ribeiro","Lucas Pereira","Fernanda Dias","Gustavo Melo","Renata Barros","Felipe Castro","Larissa Moura","André Pinto"];
+const TAXAS = {Hotmart:.099, Ticto:.069, Assiny:.059};
+const FIXA = {Hotmart:1, Ticto:1, Assiny:.99};
+
+/* Como cada plataforma nomeia o status no webhook (ilustrativo; confirmar na documentação de cada uma) */
+const RAW_STATUS = {
+  Hotmart:{aprovada:"PURCHASE_APPROVED",aguardando:"PURCHASE_BILLET_PRINTED",reembolsada:"PURCHASE_REFUNDED",chargeback:"PURCHASE_CHARGEBACK",cancelada:"PURCHASE_CANCELED"},
+  Ticto:{aprovada:"authorized",aguardando:"waiting_payment",reembolsada:"refunded",chargeback:"chargeback",cancelada:"canceled"},
+  Assiny:{aprovada:"approved",aguardando:"pending",reembolsada:"refunded",chargeback:"chargeback",cancelada:"canceled"}
+};
+const STATUS_LABEL = {aprovada:["Aprovada","p-ok"],aguardando:["Aguardando pgto","p-warn"],reembolsada:["Reembolsada","p-mute"],chargeback:["Chargeback","p-bad"],cancelada:["Cancelada","p-mute"]};
+const NF_LABEL = {emitida:["Emitida","p-ok"],fila:["Na fila","p-info"],nao:["Não se aplica","p-mute"],cancelar:["Cancelar NF","p-bad"]};
+
+/* gerador determinístico */
+let seed = 42; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
+const pick = a => a[Math.floor(rnd()*a.length)];
+
+const vendas = [];
+const base = new Date(2026,8,29,20,10);
+for (let i=0;i<46;i++){
+  const plat = pick(["Hotmart","Hotmart","Ticto","Assiny"]);
+  const p = pick(PRODUTOS);
+  const r = rnd();
+  const status = r<.72?"aprovada":r<.82?"aguardando":r<.91?"reembolsada":r<.95?"chargeback":"cancelada";
+  const pg = pick(["Pix","Cartão","Cartão","Boleto"]);
+  const parcelas = pg==="Cartão" && p.preco>200 ? pick([1,3,6,10,12]) : 1;
+  const bruto = p.preco;
+  const taxa = +(bruto*TAXAS[plat] + FIXA[plat]).toFixed(2);
+  const d = new Date(base.getTime() - i*(rnd()*5+2)*3600*1000);
+  let nf = "nao";
+  if (status==="aprovada") nf = rnd()<.7 ? "emitida" : "fila";
+  if ((status==="reembolsada"||status==="chargeback") && rnd()<.6) nf = "cancelar";
+  const pre = {Hotmart:"HP",Ticto:"TC",Assiny:"AS"}[plat];
+  const id = pre + String(Math.floor(rnd()*9e9)+1e9);
+  vendas.push({id,plat,prod:p.nome,emp:p.emp,cli:NOMES[i%NOMES.length],pg,parcelas,bruto,taxa,liq:+(bruto-taxa).toFixed(2),status,nf,data:d});
+}
+
+const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const dt = d => d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const $ = id => document.getElementById(id);
+$("f-emp").innerHTML = `<option value="">Todas as empresas</option>` + EMPRESAS.map((e,i)=>`<option value="${i}">${e}</option>`).join("");
+
+let selId = null, rawTab = "raw";
+
+function filtered(){
+  const e=$("f-emp").value, p=$("f-plat").value, s=$("f-status").value, q=$("f-q").value.trim().toLowerCase();
+  return vendas.filter(v =>
+    (e===""||v.emp==e) && (!p||v.plat===p) && (!s||v.status===s) &&
+    (!q || (v.prod+" "+v.cli+" "+v.id).toLowerCase().includes(q)));
+}
+
+function renderSources(){
+  const agora = base.getTime();
+  $("sources").innerHTML = ["Hotmart","Ticto","Assiny"].map(pl=>{
+    const vs = vendas.filter(v=>v.plat===pl);
+    const ult = vs.reduce((m,v)=>v.data>m?v.data:m,new Date(0));
+    const min = Math.round((agora-ult)/60000);
+    const hoje = vs.filter(v=>v.data.toDateString()===base.toDateString() && v.status==="aprovada");
+    const stale = min>180;
+    const rot = min<60?`${min} min`:`${Math.round(min/60)} h`;
+    return `<article class="src">
+      <div class="src-head">
+        <div class="src-name"><span class="mono-badge">${pl[0]}</span>${pl}</div>
+        <span class="live ${stale?"stale":""}">${stale?"Sem eventos recentes":"Recebendo"}</span>
+      </div>
+      <div class="src-stats">
+        <div><b>${hoje.length}</b><span>aprovadas hoje</span></div>
+        <div><b>${brl(hoje.reduce((a,v)=>a+v.liq,0)).replace(",00","")}</b><span>líquido hoje</span></div>
+        <div><b>${(TAXAS[pl]*100).toFixed(1).replace(".",",")}%</b><span>taxa + ${brl(FIXA[pl])}</span></div>
+      </div>
+      <div class="src-foot"><span>Último evento há ${rot}</span><code>/webhook/${pl.toLowerCase()}</code></div>
+    </article>`;
+  }).join("");
+}
+
+function renderTotals(list){
+  const ap = list.filter(v=>v.status==="aprovada");
+  const dev = list.filter(v=>v.status==="reembolsada"||v.status==="chargeback");
+  const pend = list.filter(v=>v.status==="aguardando");
+  const sum = (a,k)=>a.reduce((s,v)=>s+v[k],0);
+  $("totals").innerHTML = `
+    <div><span>Bruto aprovado</span><b>${brl(sum(ap,"bruto"))}</b></div>
+    <div class="neg"><span>Taxas das plataformas</span><b>− ${brl(sum(ap,"taxa"))}</b></div>
+    <div class="main"><span>Líquido a receber</span><b>${brl(sum(ap,"liq"))}</b></div>
+    <div><span>Aguardando pagamento</span><b>${brl(sum(pend,"bruto"))}</b></div>
+    <div class="neg"><span>Reembolsos e chargebacks</span><b>− ${brl(sum(dev,"bruto"))}</b></div>`;
+}
+
+function renderRows(list){
+  $("count").textContent = `${list.length} de ${vendas.length} vendas · clique numa linha para ver o evento original`;
+  $("empty").hidden = list.length>0;
+  $("rows").innerHTML = list.map(v=>{
+    const [sl,sc]=STATUS_LABEL[v.status], [nl,nc]=NF_LABEL[v.nf];
+    return `<tr data-id="${v.id}" tabindex="0" class="${v.id===selId?"sel":""}">
+      <td>${dt(v.data)}</td>
+      <td><span class="plat"><i>${v.plat[0]}</i>${v.plat}</span></td>
+      <td class="id">${v.id}</td>
+      <td class="prod" title="${esc(v.prod)}">${esc(v.prod)}</td>
+      <td>${esc(v.cli)}</td>
+      <td>${v.pg}${v.parcelas>1?` ${v.parcelas}x`:""}</td>
+      <td class="num">${brl(v.bruto)}</td>
+      <td class="num">${brl(v.taxa)}</td>
+      <td class="num"><b>${brl(v.liq)}</b></td>
+      <td><span class="pill ${sc}">${sl}</span></td>
+      <td>${EMPRESAS[v.emp].replace(" (exemplo)","")}</td>
+      <td><span class="pill ${nc}">${nl}</span></td>
+    </tr>`;
+  }).join("");
+}
+
+function rawPayload(v){
+  const st = RAW_STATUS[v.plat][v.status];
+  const iso = v.data.toISOString();
+  if (v.plat==="Hotmart") return {event:st,creation_date:v.data.getTime(),data:{product:{name:v.prod},buyer:{name:v.cli,email:"comprador@exemplo.com"},purchase:{transaction:v.id,status:st.replace("PURCHASE_",""),price:{value:v.bruto,currency_value:"BRL"},payment:{type:{Pix:"PIX",Cartão:"CREDIT_CARD",Boleto:"BILLET"}[v.pg],installments_number:v.parcelas}}}};
+  if (v.plat==="Ticto") return {status:st,order:{hash:v.id,paid_amount:Math.round(v.bruto*100),installments:v.parcelas,payment_method:{Pix:"pix",Cartão:"credit_card",Boleto:"bank_slip"}[v.pg],created_at:iso},item:{product_name:v.prod},customer:{name:v.cli,email:"comprador@exemplo.com"}};
+  return {event:"transaction."+st,transaction:{id:v.id,status:st,amount:v.bruto,net_amount:v.liq,method:{Pix:"pix",Cartão:"credit_card",Boleto:"boleto"}[v.pg],installments:v.parcelas,created_at:iso},product:{name:v.prod},client:{full_name:v.cli,email:"comprador@exemplo.com"}};
+}
+
+function normalized(v){
+  return {plataforma:v.plat.toLowerCase(),id_transacao:v.id,data_venda:v.data.toISOString(),empresa_id:v.emp+1,produto:v.prod,comprador:v.cli,forma_pagamento:v.pg.toLowerCase(),parcelas:v.parcelas,valor_bruto:v.bruto,taxa_plataforma:v.taxa,valor_liquido:v.liq,status:v.status,status_nf:v.nf};
+}
+
+function renderDetail(){
+  const v = vendas.find(x=>x.id===selId);
+  if (!v){ $("d-id").textContent=""; $("detail").innerHTML=`<p class="note">Selecione uma venda na tabela para ver os valores, a regra aplicada e o evento que a plataforma enviou.</p>`; return; }
+  $("d-id").textContent = v.id;
+  const [sl,sc]=STATUS_LABEL[v.status];
+  const st = RAW_STATUS[v.plat][v.status];
+  const json = JSON.stringify(rawTab==="raw"?rawPayload(v):normalized(v),null,2);
+  $("detail").innerHTML = `
+    <dl>
+      <dt>Produto</dt><dd>${esc(v.prod)}</dd>
+      <dt>Empresa emissora</dt><dd>${EMPRESAS[v.emp]}</dd>
+      <dt>Status</dt><dd><span class="pill ${sc}">${sl}</span></dd>
+      <dt>Valor bruto</dt><dd>${brl(v.bruto)}</dd>
+      <dt>Taxa ${v.plat}</dt><dd>− ${brl(v.taxa)}</dd>
+      <dt><b>Líquido</b></dt><dd><b>${brl(v.liq)}</b></dd>
+    </dl>
+    <div>
+      <div class="sec-title">Tradução do status</div>
+      <div class="map"><div><code>${st}</code><span class="arrow">→</span><code>${v.status}</code></div></div>
+    </div>
+    <div>
+      <div class="sec-title">Regra de empresa</div>
+      <p class="note" style="margin:0">Produto “${esc(v.prod)}” está cadastrado para ${EMPRESAS[v.emp]}. Vendas aprovadas desse produto geram NF por essa empresa.</p>
+    </div>
+    <div>
+      <div class="panel-head" style="padding:0 0 8px;border:0">
+        <div class="sec-title" style="margin:0">Evento</div>
+        <div class="tabs">
+          <button id="t-raw" aria-pressed="${rawTab==="raw"}">Recebido</button>
+          <button id="t-norm" aria-pressed="${rawTab==="norm"}">Normalizado</button>
+        </div>
+      </div>
+      <pre>${esc(json)}</pre>
+    </div>`;
+  $("t-raw").onclick=()=>{rawTab="raw";renderDetail()};
+  $("t-norm").onclick=()=>{rawTab="norm";renderDetail()};
+}
+
+function render(){
+  const list = filtered();
+  if (selId && !list.some(v=>v.id===selId)) selId = list[0]?.id ?? null;
+  renderTotals(list); renderRows(list); renderDetail();
+}
+
+$("rows").addEventListener("click",e=>{const tr=e.target.closest("tr"); if(tr){selId=tr.dataset.id; render();}});
+$("rows").addEventListener("keydown",e=>{if(e.key==="Enter"){const tr=e.target.closest("tr"); if(tr){selId=tr.dataset.id; render(); document.querySelector(`tr[data-id="${selId}"]`)?.focus();}}});
+["f-emp","f-plat","f-status"].forEach(id=>$(id).addEventListener("change",render));
+$("f-q").addEventListener("input",render);
+
+selId = vendas[0].id;
+renderSources(); render();
+</script>
+
+</body>
+</html>
