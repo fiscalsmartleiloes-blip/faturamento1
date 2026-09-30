@@ -62,14 +62,14 @@ button{font:inherit;cursor:pointer}
 .btn.danger{color:var(--bad)}
 .btn:disabled{opacity:.6;cursor:default}
 select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-visible,tr:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-
+ 
 .login{min-height:100vh;display:grid;place-items:center;padding:16px}
 .login form{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 24px;display:flex;flex-direction:column;gap:14px}
 .login label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;color:var(--muted)}
 .login input{font-size:15px;padding:10px 12px}
 .login .btn{padding:11px;font-size:15px}
 .err{color:var(--bad);font-size:13px;font-weight:600;min-height:1em;margin:0}
-
+ 
 .topbar{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
 .userbox{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
 .badge{display:inline-block;margin-left:6px;background:var(--warn-soft);color:var(--warn);border-radius:99px;padding:0 7px;font-size:11.5px}
@@ -77,7 +77,7 @@ select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-vis
 input[type=search]{width:230px;max-width:100%}
 .alert{background:var(--warn-soft);color:var(--warn);border-radius:var(--r);padding:10px 14px;font-size:13px;font-weight:500;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .alert button{border:0;background:none;color:inherit;font-weight:700;text-decoration:underline;padding:0}
-
+ 
 .sources{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .src{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
 .src-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -86,7 +86,7 @@ input[type=search]{width:230px;max-width:100%}
 .live::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .live.stale{color:var(--warn)} .live.off{color:var(--muted)}
 .src small{color:var(--muted);font-size:12px}
-
+ 
 .totals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
 .totals.t4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .totals div{padding:12px 16px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--line)}
@@ -94,7 +94,7 @@ input[type=search]{width:230px;max-width:100%}
 .totals span{font-size:12px;color:var(--muted)}
 .totals b{font-size:19px;font-variant-numeric:tabular-nums;font-weight:700}
 .totals .neg b{color:var(--bad)} .totals .main b{color:var(--accent)} .totals .warn b{color:var(--warn)}
-
+ 
 .ledger{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -119,7 +119,7 @@ td input[type=date]{width:140px}
 .p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--info-soft);color:var(--info)}
 .p-mute{background:var(--surface-2);color:var(--muted)}
 .empty{padding:28px 16px;text-align:center;color:var(--muted)}
-
+ 
 .detail{position:sticky;top:12px}
 dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:13px}
 dt{color:var(--muted)} dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
@@ -128,7 +128,7 @@ pre{margin:0;font-family:var(--font-mono);font-size:11.5px;background:var(--surf
 .nota{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
 .nota:last-child{border-bottom:0}
 .nota small{color:var(--muted);grid-column:1/-1}
-
+ 
 /* formulários de configuração */
 .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px 16px}
 .field{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;color:var(--muted);min-width:0}
@@ -142,6 +142,9 @@ legend{font-weight:700;font-size:13px;padding:0 6px}
 .plist button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:10px 14px;color:var(--fg)}
 .plist button[aria-current=true]{background:var(--accent-soft)}
 .plist small{color:var(--muted);font-size:12px}
+.plist h4{margin:0;padding:10px 14px 6px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;position:sticky;top:0}
+.merge-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.merge-row select{flex:1;min-width:200px}
 .split-sec{display:flex;flex-direction:column;gap:8px}
 .split-sec header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
 .split-row{display:grid;grid-template-columns:minmax(160px,1.4fr) 110px 120px minmax(160px,1.6fr) auto;gap:8px;align-items:center}
@@ -153,7 +156,7 @@ legend{font-weight:700;font-size:13px;padding:0 6px}
 .cat-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .cat-item{display:flex;gap:6px;align-items:center}
 .cat-item input[type=text]{flex:1}
-
+ 
 dialog.lanc{width:min(1180px,96vw);max-height:92vh;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--fg);overflow:hidden}
 dialog.lanc::backdrop{background:rgba(10,15,13,.55)}
 .lanc-shell{display:flex;flex-direction:column;max-height:92vh}
@@ -179,7 +182,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
 .steps{display:flex;flex-direction:column;gap:16px}
 @media (max-width:900px){ .lanc-body{grid-template-columns:1fr} .map-grid{grid-template-columns:1fr 1fr} .map-grid .ex{grid-column:1/-1} }
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:99px;font-weight:600;font-size:13px;z-index:10}
-
+ 
 @media (max-width:900px){
   .app{grid-template-columns:1fr}
   .side{position:static;height:auto;padding:12px 16px;gap:10px;border-right:0;border-bottom:1px solid var(--line)}
@@ -206,7 +209,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
 </style>
 </head>
 <body>
-
+ 
 <section class="login" id="tela-login" hidden>
   <form id="form-login">
     <div><div class="eyebrow">Automação faturamento</div><h1>Entrar</h1></div>
@@ -216,17 +219,17 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
     <button class="btn primary" type="submit" id="btn-entrar">Entrar</button>
   </form>
 </section>
-
+ 
 <div class="app" id="tela-app" hidden>
 <aside class="side">
   <div class="brand"><div class="eyebrow">Automação</div><b>Faturamento</b></div>
   <label class="side-field">Empresa<select id="f-emp"></select></label>
   <nav class="side-nav" aria-label="Menu">
     <button type="button" data-aba="vendas" aria-current="page">Vendas</button>
-    <button type="button" data-aba="importar" aria-current="false">Importar vendas (CSV)</button>
+    <button type="button" data-aba="importar" aria-current="false">Importar vendas</button>
     <button type="button" data-aba="fluxo" aria-current="false">Fluxo de recebimento</button>
     <div class="side-group">Configuração<span class="badge" id="badge-config" hidden></span></div>
-    <button type="button" class="sub" data-aba="config" data-sub="produtos" aria-current="false">Produtos e split fiscal</button>
+    <button type="button" class="sub" data-aba="config" data-sub="produtos" aria-current="false">Produtos e split por empresa</button>
     <button type="button" class="sub" data-aba="config" data-sub="empresas" aria-current="false">Empresas e tributação</button>
     <button type="button" class="sub" data-aba="config" data-sub="coprodutores" aria-current="false">Coprodutores externos</button>
     <button type="button" class="sub" data-aba="config" data-sub="regras" aria-current="false">Regras de recebimento</button>
@@ -241,7 +244,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
   <header class="topbar">
     <div><div class="eyebrow" id="eyebrow">Contas a receber</div><h1 id="titulo">Captação de vendas</h1></div>
   </header>
-
+ 
   <!-- ================= VENDAS ================= -->
   <section id="aba-vendas" class="stack">
     <div class="controls">
@@ -277,14 +280,14 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
       </div>
     </div>
   </section>
-
+ 
   <!-- ================= IMPORTAR ================= -->
   <section id="aba-importar" class="steps" hidden>
     <div class="panel"><div class="panel-body">
-      <p class="note">Use para trazer as vendas antigas. Na Hotmart: <b>Relatórios → Vendas → Exportar</b> em CSV. De uma planilha do Google: <b>Arquivo → Fazer download → .csv</b>. Vendas que já existem no sistema são ignoradas, nada é duplicado.</p>
+      <p class="note">Use para trazer as vendas antigas. Aceita CSV e Excel (.xlsx). Na Hotmart: <b>Relatórios → Vendas → Exportar</b>. No Asaas: <b>Cobranças → Exportar</b>. De uma planilha do Google: <b>Arquivo → Fazer download → .csv</b>. Vendas que já existem no sistema são ignoradas, nada é duplicado.</p>
       <div class="controls">
         <label class="field">Plataforma de origem<select id="imp-plat"><option value="hotmart">Hotmart</option><option value="asaas">Asaas</option><option value="ticto">Ticto</option><option value="assiny">Assiny</option></select></label>
-        <label class="field">Arquivo CSV<input type="file" id="imp-arq" accept=".csv,.txt,text/csv"></label>
+        <label class="field">Arquivo (CSV ou Excel)<input type="file" id="imp-arq" accept=".csv,.txt,.xlsx,.xls,text/csv"></label>
       </div>
       <p class="note" id="imp-info"></p>
     </div></div>
@@ -294,7 +297,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
     </div>
     <div class="panel" id="imp-prev-box" hidden>
       <div class="panel-head"><h2>Prévia</h2><small id="imp-resumo"></small></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Linha</th><th>Transação</th><th>Data</th><th>Status</th><th>Produto</th><th class="num">Bruto</th><th class="num">Líquido</th><th>Comprador</th><th>Cidade</th></tr></thead><tbody id="imp-prev"></tbody></table></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Linha</th><th>Transação</th><th>Data</th><th>Vencimento</th><th>Status</th><th>Produto</th><th class="num">Bruto</th><th class="num">Líquido</th><th>Comprador</th><th>Cidade</th></tr></thead><tbody id="imp-prev"></tbody></table></div>
       <div class="panel-body">
         <div id="imp-erros"></div>
         <div class="controls"><button class="btn primary" type="button" id="imp-ir">Importar</button><span class="note" id="imp-prog"></span></div>
@@ -302,7 +305,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
       </div>
     </div>
   </section>
-
+ 
   <!-- ================= FLUXO ================= -->
   <section id="aba-fluxo" class="stack" hidden>
     <div class="controls">
@@ -329,16 +332,17 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
       </div>
     </div>
   </section>
-
+ 
   <!-- ================= CONFIGURAÇÃO ================= -->
   <section id="aba-config" class="stack" hidden>
     
-
+ 
     <!-- produtos e split -->
     <section id="sub-produtos" class="cfg">
       <div class="panel">
-        <div class="panel-head"><h2>Produtos</h2>
-          <select id="cp-filtro" aria-label="Filtrar produtos"><option value="">Todos</option><option value="sem">Sem empresa</option><option value="emp">Da empresa selecionada</option></select>
+        <div class="panel-head"><h2>Empresas e produtos</h2>
+          <select id="cp-filtro" aria-label="Filtrar produtos"><option value="">Todas as empresas</option><option value="sem">Sem empresa</option><option value="emp">Só a empresa selecionada no menu</option></select>
+          <input type="search" id="cp-busca" placeholder="Buscar produto" aria-label="Buscar produto" style="width:100%">
         </div>
         <div class="plist" id="cp-lista"></div>
       </div>
@@ -347,7 +351,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
         <div class="panel-body" id="cp-editor"><p class="note">Escolha um produto na lista para definir a empresa emissora, as categorias e a divisão fiscal.</p></div>
       </div>
     </section>
-
+ 
     <!-- empresas -->
     <section id="sub-empresas" class="panel" hidden>
       <div class="panel-head"><h2>Empresas e informações tributárias</h2>
@@ -355,7 +359,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
       </div>
       <form class="panel-body" id="ce-form"></form>
     </section>
-
+ 
     <!-- coprodutores -->
     <section id="sub-coprodutores" class="panel" hidden>
       <div class="panel-head"><h2>Coprodutores externos</h2><small>Pessoas ou empresas fora do grupo. A parte deles sai do valor antes da divisão, sem nota emitida por vocês.</small></div>
@@ -369,7 +373,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
         <button class="btn primary" type="submit">Adicionar coprodutor</button>
       </form>
     </section>
-
+ 
     <!-- regras de recebimento -->
     <section id="sub-regras" class="panel" hidden>
       <div class="panel-head"><h2>Regras de recebimento</h2><small>Define como cada venda vira parcelas no fluxo. A regra específica da forma de pagamento vale antes da regra "qualquer".</small></div>
@@ -382,7 +386,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
         <button class="btn primary" type="submit">Adicionar regra</button>
       </form>
     </section>
-
+ 
     <!-- categorias -->
     <section id="sub-categorias" class="panel" hidden>
       <div class="panel-head"><h2>Categorias (plano de contas)</h2><small>Renomeie, desative ou adicione. Categorias desativadas deixam de aparecer nas listas.</small></div>
@@ -391,7 +395,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
   </section>
 </main>
 </div>
-
+ 
 <dialog class="lanc" id="lanc" aria-labelledby="lanc-titulo">
   <form class="lanc-shell" id="lanc-form" method="dialog">
     <header class="lanc-head">
@@ -408,17 +412,17 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
     </footer>
   </form>
 </dialog>
-
+ 
 <div class="toast" id="toast" hidden></div>
-
+ 
 <script>
 const SUPABASE_URL = "https://piongychxvpfuafhcpuf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_6cyhKt4d6EMMlIamYCBmFQ_mRsMQk-u";
 const EMPRESA_PADRAO = "TUBAR";
-
+ 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-
+ 
 const PLAT = {hotmart:"Hotmart", asaas:"Asaas", ticto:"Ticto", assiny:"Assiny"};
 const STATUS = {aprovada:["Aprovada","p-ok"], aguardando:["Aguardando pgto","p-warn"], em_disputa:["Em disputa","p-bad"],
   reembolsada:["Reembolsada","p-mute"], chargeback:["Chargeback","p-bad"], cancelada:["Cancelada","p-mute"]};
@@ -428,7 +432,7 @@ const ENDERECO = {checkout:["Checkout","p-ok"], padrao_ddd:["Padrão DDD","p-inf
 const SIT = {a_vencer:["A vencer","p-info"], vencido:["Vencido","p-bad"], perda_estimada:["Perda estimada","p-bad"], pago:["Pago","p-ok"]};
 const PAGTO = {pix:"Pix", cartao:"Cartão", boleto:"Boleto", outro:"Outro", qualquer:"Qualquer"};
 const TIPONF = {nfe:"NF-e (produto)", nfs:"NFS-e (serviço)", sem_nf:"Sem nota"};
-
+ 
 const brl = v => v==null||v==="" ? "—" : Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const dt = s => s ? new Date(s).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo",day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
 const dia = s => s ? new Date(s+"T12:00:00").toLocaleDateString("pt-BR") : "—";
@@ -445,7 +449,7 @@ async function salvar(tabela, id, campos, msg="Salvo"){
   if (error){ toast("Não foi possível salvar: "+error.message); return false; }
   toast(msg); return true;
 }
-
+ 
 let S = {empresas:[], produtos:[], vendas:[], ultimos:{}, cats:[], coprod:[], regras:[], splits:[], receb:[]};
 let selVenda=null, selProduto=null, abaAtual="vendas", subAtual="produtos", timer=null, editando=null, emailUsuario="";
 const nomeEmpresa = id => (S.empresas.find(e=>e.id===id)||{}).nome || "—";
@@ -454,7 +458,7 @@ const catsDo = g => S.cats.filter(c=>c.grupo===g).sort((a,b)=>a.ordem-b.ordem||a
 const optCats = (g, sel, vazio="— Escolha —") => `<option value="">${vazio}</option>` + catsDo(g).filter(c=>c.ativo||c.id===sel).map(c=>`<option value="${c.id}" ${c.id===sel?"selected":""}>${esc(c.nome)}</option>`).join("");
 const empFiltro = () => $("f-emp").value;
 const passaEmpresa = empId => { const e=empFiltro(); return e==="" || (e==="sem" ? empId==null : String(empId)===e); };
-
+ 
 /* ---------------- login ---------------- */
 async function iniciar(){
   const { data:{ session } } = await sb.auth.getSession();
@@ -478,7 +482,7 @@ $("form-login").addEventListener("submit", async e=>{
 });
 $("btn-sair").onclick = async ()=>{ await sb.auth.signOut(); mostrarLogin(); };
 $("btn-atualizar").onclick = ()=>carregarTudo(false).then(()=>toast("Atualizado"));
-
+ 
 /* ---------------- dados ---------------- */
 async function carregarTudo(primeiraVez){
   const q = await Promise.all([
@@ -494,12 +498,12 @@ async function carregarTudo(primeiraVez){
   const erro = q.find(r=>r.error);
   if (erro){ if (/JWT|auth/i.test(erro.error.message)) { await sb.auth.signOut(); return; } toast("Erro ao carregar: "+erro.error.message); return; }
   [S.empresas,S.produtos,S.vendas,S.cats,S.coprod,S.regras,S.splits,S.receb] = q.map(r=>r.data);
-
+ 
   await Promise.all(Object.keys(PLAT).map(async pl=>{
     const r = await sb.from("eventos_webhook").select("recebido_em").eq("plataforma",pl).order("recebido_em",{ascending:false}).limit(1);
     S.ultimos[pl] = r.data && r.data[0] ? r.data[0].recebido_em : null;
   }));
-
+ 
   if (primeiraVez){
     $("f-emp").innerHTML = `<option value="">Todas as empresas</option><option value="sem">Sem empresa definida</option>` +
       S.empresas.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
@@ -516,10 +520,10 @@ function renderTudo(){
   if (abaAtual==="config") renderConfig();
 }
 $("f-emp").addEventListener("change", renderTudo);
-
+ 
 /* ---------------- menu lateral ---------------- */
 const TITULOS = {vendas:["Contas a receber","Captação de vendas"], importar:["Contas a receber","Importar vendas antigas"], fluxo:["Contas a receber","Fluxo de recebimento"],
-  produtos:["Configuração","Produtos e split fiscal"], empresas:["Configuração","Empresas e tributação"], coprodutores:["Configuração","Coprodutores externos"],
+  produtos:["Configuração","Produtos e split por empresa"], empresas:["Configuração","Empresas e tributação"], coprodutores:["Configuração","Coprodutores externos"],
   regras:["Configuração","Regras de recebimento"], categorias:["Configuração","Categorias"]};
 document.querySelectorAll(".side-nav [data-aba]").forEach(b=>b.onclick=()=>{ if(b.dataset.sub) subAtual=b.dataset.sub; abrirAba(b.dataset.aba); });
 function abrirAba(a){
@@ -533,7 +537,7 @@ function abrirAba(a){
   renderTudo();
 }
 function abrirSub(s){ subAtual=s; abrirAba("config"); }
-
+ 
 /* ================= VENDAS ================= */
 function noPeriodo(iso){
   const p=$("f-periodo").value; if(p==="tudo") return true;
@@ -555,7 +559,7 @@ function renderVendas(){
   const al=$("alerta-produtos");
   if (semEmpresa){ al.hidden=false; al.innerHTML=`${semEmpresa} produto${semEmpresa>1?"s":""} sem empresa definida. As vendas desses produtos só aparecem em "Sem empresa definida". <button type="button" id="ir-produtos">Configurar produtos</button>`; $("ir-produtos").onclick=()=>{ $("cp-filtro").value="sem"; abrirSub("produtos"); }; }
   else al.hidden=true;
-
+ 
   const agora=Date.now();
   $("sources").innerHTML = Object.entries(PLAT).map(([k,nome])=>{
     const u=S.ultimos[k];
@@ -565,7 +569,7 @@ function renderVendas(){
     const stale=min>1440;
     return `<article class="src"><div class="src-head"><span class="src-name">${nome}</span><span class="live ${stale?"stale":""}">${stale?"Sem eventos recentes":"Recebendo"}</span></div><small>Último evento ${rot}</small></article>`;
   }).join("");
-
+ 
   const list=vendasFiltradas(), soma=(a,k)=>a.reduce((s,v)=>s+Number(v[k]||0),0);
   const ap=list.filter(v=>v.status==="aprovada"), pend=list.filter(v=>v.status==="aguardando"),
         dev=list.filter(v=>["reembolsada","chargeback","em_disputa"].includes(v.status));
@@ -575,7 +579,7 @@ function renderVendas(){
     <div class="main"><span>Líquido a receber</span><b>${brl(soma(ap,"valor_liquido"))}</b></div>
     <div><span>Aguardando pagamento</span><b>${brl(soma(pend,"valor_bruto"))}</b></div>
     <div class="neg"><span>Reembolsos, chargebacks e disputas</span><b>− ${brl(soma(dev,"valor_bruto"))}</b></div>`;
-
+ 
   $("count").textContent = `${list.length} venda${list.length===1?"":"s"}${S.vendas.length>=1000?" · mostrando as 1.000 mais recentes":""}`;
   $("empty").hidden = list.length>0;
   $("empty").textContent = S.vendas.length ? "Nenhuma venda com esses filtros." : "Nenhuma venda recebida ainda. Elas aparecem aqui assim que as plataformas enviarem.";
@@ -583,7 +587,7 @@ function renderVendas(){
     <tr class="clic ${v.id===selVenda?"sel":""}" data-id="${v.id}" tabindex="0" title="Abrir lançamento">
       <td>${dt(v.data_venda)}</td><td>${esc(PLAT[v.plataforma]||v.plataforma)}</td><td class="id">${esc(v.id_transacao)}</td>
       <td class="trunc" title="${esc(v.produto_nome)}">${esc(v.produto_nome)}</td><td class="trunc" title="${esc(v.comprador_nome)}">${esc(v.comprador_nome)}</td>
-      <td>${esc(PAGTO[v.forma_pagamento]||"—")}${v.parcelas>1?` ${v.parcelas}x`:""}</td>
+      <td>${esc(PAGTO[v.forma_pagamento]||"—")}${v.parcela_num?` · parc. ${v.parcela_num}${v.parcela_total?"/"+v.parcela_total:""}`:(v.parcelas>1?` ${v.parcelas}x`:"")}</td>
       <td class="num">${brl(v.valor_bruto)}</td><td class="num">${brl(v.taxa_plataforma)}</td><td class="num"><b>${brl(v.valor_liquido)}</b></td>
       <td>${pill(STATUS,v.status)}</td><td>${pill(ENDERECO,v.origem_endereco)}</td><td>${pill(NF_VENDA,v.status_nf)}</td>
       <td>${v.observacoes?'<span class="pill p-info" title="Tem observações">Obs.</span> ':""}<span class="btn link">Abrir</span></td>
@@ -597,7 +601,7 @@ const TIPO_ANEXO={nf_pdf:"PDF da nota",nf_xml:"XML da nota",contrato:"Contrato",
 function paraLocal(iso){ if(!iso) return "";
   const p=new Intl.DateTimeFormat("sv-SE",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(iso));
   return p.replace(" ","T"); }
-
+ 
 function abrirLancamento(id){
   const v=S.vendas.find(x=>x.id===id); if(!v) return;
   selVenda=id; editando=id;
@@ -620,6 +624,10 @@ function abrirLancamento(id){
       <label class="field">Forma de pagamento<select name="forma_pagamento">${["pix","cartao","boleto","outro"].map(k=>`<option value="${k}" ${k===v.forma_pagamento?"selected":""}>${PAGTO[k]}</option>`).join("")}</select></label>
       <label class="field">Parcelas<input type="number" min="1" step="1" name="parcelas" value="${v.parcelas??1}"></label>
       ${num("valor_bruto","Valor pago (bruto)")}${num("taxa_plataforma","Taxa da plataforma")}${num("valor_liquido","Valor líquido")}
+      <label class="field">Vencimento<input type="date" name="vencimento" value="${v.vencimento||""}"></label>
+      <label class="field">Data em que o dinheiro entrou<input type="date" name="data_pagamento" value="${v.data_pagamento||""}"></label>
+      <label class="field">Parcela nº<input type="number" min="1" step="1" name="parcela_num" value="${v.parcela_num??""}"></label>
+      <label class="field">De quantas<input type="number" min="1" step="1" name="parcela_total" value="${v.parcela_total??""}"></label>
     </div>
     <p class="note">Empresa emissora: <b>${esc(nomeEmpresa(v.empresa_id))}</b> (vem do produto).${v.valores_manuais?" Os valores desta venda foram corrigidos à mão e a plataforma não vai mais alterá-los, só o status.":" Se você corrigir valores, a plataforma deixa de alterá-los e passa a atualizar só o status."}</p>
     </fieldset>
@@ -706,6 +714,9 @@ $("lanc-form").addEventListener("submit", async ev=>{
   ["categoria_id","subcategoria_id","tipo_recebimento_id","produto_id"].forEach(k=>dados[k]=f.elements[k].value?Number(f.elements[k].value):null);
   ["valor_bruto","taxa_plataforma","valor_liquido"].forEach(k=>dados[k]=f.elements[k].value===""?null:Number(f.elements[k].value));
   dados.parcelas = Math.max(parseInt(f.elements.parcelas.value||"1",10),1);
+  dados.vencimento = f.elements.vencimento.value||null; dados.data_pagamento = f.elements.data_pagamento.value||null;
+  dados.parcela_num = f.elements.parcela_num.value?parseInt(f.elements.parcela_num.value,10):null;
+  dados.parcela_total = f.elements.parcela_total.value?parseInt(f.elements.parcela_total.value,10):null;
   if (dados.valor_bruto==null){ toast("Informe o valor pago"); return; }
   if (!f.elements.data_venda.value){ toast("Informe a data da venda"); return; }
   dados.data_venda = f.elements.data_venda.value + ":00-03:00";
@@ -724,7 +735,7 @@ $("lanc-form").addEventListener("submit", async ev=>{
 function fecharLancamento(){ editando=null; $("lanc").close(); renderTudo(); }
 $("lanc-x").onclick=fecharLancamento; $("lanc-cancelar").onclick=fecharLancamento;
 $("lanc").addEventListener("cancel", ()=>{ editando=null; });
-
+ 
 /* ---------- anexos ---------- */
 async function carregarAnexos(vid){
   const { data, error } = await sb.from("anexos").select("*").eq("venda_id",vid).order("criado_em");
@@ -780,14 +791,14 @@ $("lanc").addEventListener("click", async e=>{
     toast("Anexo adicionado"); carregarAnexos(vid);
   }
 });
-
+ 
 $("rows").addEventListener("click",e=>{const tr=e.target.closest("tr[data-id]"); if(tr) abrirLancamento(Number(tr.dataset.id));});
 $("rows").addEventListener("keydown",e=>{if(e.key==="Enter"){const tr=e.target.closest("tr[data-id]"); if(tr) abrirLancamento(Number(tr.dataset.id));}});
-
-/* ================= IMPORTAR CSV ================= */
+ 
+/* ================= IMPORTAR CSV / EXCEL ================= */
 /* ---------- importação CSV: funções puras (testáveis) ---------- */
 const semAcento = s => String(s??"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
-
+ 
 function lerCSV(texto){
   texto = texto.replace(/^﻿/, "");
   const primeira = texto.split(/\r?\n/)[0] || "";
@@ -812,10 +823,10 @@ function lerCSV(texto){
   const cab = (linhas.shift()||[]).map(h=>h.trim());
   return { cabecalho: cab, linhas, delim };
 }
-
+ 
 function numero(v){
   if (v==null) return null;
-  let s=String(v).replace(/R\$|\s| /g,"").trim();
+  let s=String(v).replace(/R\$|\s| /g,"").trim();
   if (s==="" || s==="-") return null;
   const neg = /^\(.*\)$/.test(s) || s.startsWith("-"); s=s.replace(/[()\-]/g,"");
   const ult = Math.max(s.lastIndexOf(","), s.lastIndexOf("."));
@@ -827,7 +838,7 @@ function numero(v){
   }
   const n=Number(s); return isNaN(n)?null:(neg?-n:n);
 }
-
+ 
 function dataISO(v){
   if (v==null) return null; const s=String(v).trim(); if(!s) return null;
   let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ T,]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
@@ -840,7 +851,7 @@ function dataISO(v){
     return `${d.toISOString().slice(0,10)}T12:00:00-03:00`; }
   return null;
 }
-
+ 
 function statusCanon(v){
   const s=semAcento(v); if(!s) return null;
   if (/chargeback|estorno contestado/.test(s)) return "chargeback";
@@ -858,15 +869,15 @@ function pagtoCanon(v){
   if (/boleto|billet/.test(s)) return "boleto";
   return "outro";
 }
-
+ 
 const CAMPOS_IMPORT = [
-  ["id_transacao","Código da transação",true,["id transa","transacao","transaction","codigo da venda","id da venda","id venda","pedido"]],
-  ["data_venda","Data da venda",true,["data da venda","data de venda","data da compra","data do pedido","order date","data"]],
-  ["status","Status",true,["status da venda","status da compra","status"]],
+  ["id_transacao","Código da transação",true,["id transa","transacao","transaction","codigo da venda","id da venda","id venda","pedido","numero da fatura","identificador"]],
+  ["data_venda","Data da venda",true,["data da venda","data de venda","data da compra","data do pedido","order date","data de criacao","data"]],
+  ["status","Status",true,["status da venda","status da compra","status","situacao"]],
   ["produto_id_plataforma","Código do produto",false,["id produto","id do produto","codigo do produto","cod produto","product id","cod. produto"]],
-  ["produto_nome","Produto",true,["nome do produto","produto","product"]],
+  ["produto_nome","Produto",true,["nome do produto","produto","product","descricao"]],
   ["valor_bruto","Valor pago (bruto)",true,["valor bruto","valor de compra com impostos","valor da compra","valor de compra","preco total","valor total","valor pago","valor"]],
-  ["valor_liquido","Valor líquido do produtor",false,["liquido produtor","faturamento liquido","comissao do produtor","valor liquido","liquido"]],
+  ["valor_liquido","Valor líquido",false,["liquido produtor","faturamento liquido","comissao do produtor","valor liquido","liquido"]],
   ["coprodutor","Valor do coprodutor",false,["coprodutor","coproducao","co-produtor"]],
   ["taxa","Taxas",false,["taxa"]],
   ["comprador_nome","Comprador",false,["nome/comprador","nome do comprador","comprador","cliente","aluno","buyer","nome"]],
@@ -881,23 +892,38 @@ const CAMPOS_IMPORT = [
   ["cidade","Cidade",false,["cidade"]],
   ["uf","Estado (UF)",false,["uf","estado"]],
   ["forma_pagamento","Forma de pagamento",false,["metodo de pagamento","forma de pagamento","meio de pagamento","tipo de pagamento","pagamento","payment"]],
-  ["parcelas","Parcelas",false,["quantidade de parcelas","numero de parcelas","parcelas","installments"]]
+  ["parcelas","Parcelas",false,["quantidade de parcelas","numero de parcelas","parcelas","installments"]],
+  ["vencimento","Vencimento (cobranças)",false,["vencimento"]],
+  ["data_prevista","Data prevista de crédito",false,["data estimada de credito","previsao de credito","data prevista"]],
+  ["data_pagamento","Data em que o dinheiro entrou",false,["data de credito","data do credito","data de pagamento","data do pagamento"]]
 ];
-
+ 
 function detectarMapa(cabecalho){
   const norm = cabecalho.map(semAcento), usados=new Set(), mapa={};
-  for (const [k,,,chaves] of CAMPOS_IMPORT){
+  const ordem = [...CAMPOS_IMPORT].sort((a,b)=>(a[0]==="data_venda")-(b[0]==="data_venda"));
+  for (const [k,,,chaves] of ordem){
     let achou=-1;
     for (const ch of chaves){
-      achou = norm.findIndex((h,i)=>!usados.has(i) && h.includes(ch));
+      achou = norm.findIndex((h,i)=>!usados.has(i) && h.includes(ch) && !(k==="numero" && /boleto|fatura|parcela|documento|pedido/.test(h)));
       if (achou>=0) break;
     }
     if (achou>=0){ mapa[k]=achou; usados.add(achou); }
   }
   return mapa;
 }
-
-function montarLinha(cols, mapa, nLinha){
+ 
+function limparDescricao(txt){
+  let s=String(txt||"").trim(), n=null, t=null, m;
+  if ((m=s.match(/parcela\s+(\d+)\s*(?:de|\/)\s*(\d+)/i))){ n=+m[1]; t=+m[2]; }
+  else if ((m=s.match(/parcela\s+(\d+)/i))) n=+m[1];
+  let nome=s.replace(/parcela\s+\d+\s*(?:de|\/)\s*\d+\s*[.:\-–]?/ig,"")
+    .replace(/[-–]?\s*[uú]ltima\s+parcela/ig,"").replace(/[-–]\s*parcela\s*\d*/ig,"")
+    .replace(/^\s*(entrada|parcela)\b\s*\d*\s*/i,"").replace(/^[\s\-–.:]+|[\s\-–.:]+$/g,"").replace(/\s{2,}/g," ").trim();
+  return { nome: nome||s, n, t };
+}
+const soData = v => { const d=dataISO(v); return d ? d.slice(0,10) : null; };
+ 
+function montarLinha(cols, mapa, nLinha, plataforma){
   const g = k => mapa[k]==null ? "" : (cols[mapa[k]]??"").trim();
   const o = { _linha:nLinha }, erros=[];
   o.id_transacao = g("id_transacao");
@@ -919,22 +945,43 @@ function montarLinha(cols, mapa, nLinha){
   ["logradouro","numero","complemento","bairro","cidade","uf"].forEach(k=>o[k]=g(k).replace(/\.0+$/,""));
   o.forma_pagamento = pagtoCanon(g("forma_pagamento"));
   o.parcelas = parseInt(numero(g("parcelas"))||1,10)||1;
+  o.vencimento = soData(g("vencimento")); o.data_prevista = soData(g("data_prevista")); o.data_pagamento = soData(g("data_pagamento"));
+  if (plataforma==="asaas" && o.produto_nome){ const d=limparDescricao(o.produto_nome); o.observacao_origem=o.produto_nome; o.produto_nome=d.nome; o.parcela_num=d.n; o.parcela_total=d.t; }
+  const hoje=new Date().toISOString().slice(0,10);
+  if (o.data_pagamento && o.data_pagamento>hoje){ o.data_prevista=o.data_pagamento; o.data_pagamento=null; } // crédito agendado ainda não caiu
+  if (o.status!=="aprovada") o.data_pagamento=null;
   if (!o.id_transacao) erros.push("sem código da transação");
   if (!o.data_venda) erros.push(`data não reconhecida ("${g("data_venda")}")`);
   if (!o.status) erros.push(`status não reconhecido ("${g("status")}")`);
   if (o.valor_bruto==null) erros.push(`valor não reconhecido ("${g("valor_bruto")}")`);
   return { linha:o, erros };
 }
-
-
-
+ 
+ 
 let IMP={cab:[],linhas:[],mapa:{},res:[]};
+function carregarXLSX(){
+  if (window.XLSX) return Promise.resolve();
+  return new Promise((ok,erro)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload=ok; s.onerror=erro; document.head.appendChild(s); });
+}
+$("imp-plat").addEventListener("change", ()=>{ if (IMP.linhas.length) prevImport(); });
 $("imp-arq").addEventListener("change", async ()=>{
   const arq=$("imp-arq").files[0]; $("imp-res").innerHTML=""; $("imp-prog").textContent="";
   if(!arq){ return; }
-  const ler=enc=>new Promise((ok,erro)=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=erro; r.readAsText(arq,enc); });
-  let texto=await ler("utf-8"); if (texto.includes("\uFFFD")) texto=await ler("windows-1252");
-  const {cabecalho,linhas}=lerCSV(texto);
+  let cabecalho=[], linhas=[];
+  if (/\.xlsx?$/i.test(arq.name)){
+    $("imp-info").textContent="Lendo planilha…";
+    try{
+      await carregarXLSX();
+      const wb=XLSX.read(await arq.arrayBuffer(), {type:"array"});
+      const tab=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:false, defval:""})
+        .map(l=>l.map(x=>String(x??""))).filter(l=>l.some(x=>x.trim()!==""));
+      cabecalho=(tab.shift()||[]).map(x=>x.trim()); linhas=tab;
+    }catch(err){ $("imp-info").textContent="Não consegui ler essa planilha. Salve como CSV e tente de novo."; return; }
+  } else {
+    const ler=enc=>new Promise((ok,erro)=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=erro; r.readAsText(arq,enc); });
+    let texto=await ler("utf-8"); if (texto.includes("\uFFFD")) texto=await ler("windows-1252");
+    ({cabecalho,linhas}=lerCSV(texto));
+  }
   if (!cabecalho.length || !linhas.length){ $("imp-info").textContent="Não encontrei linhas nesse arquivo. Confira se é um CSV com cabeçalho na primeira linha."; $("imp-mapa-box").hidden=true; $("imp-prev-box").hidden=true; return; }
   IMP={cab:cabecalho, linhas, mapa:detectarMapa(cabecalho), res:[]};
   $("imp-info").textContent=`${arq.name}: ${linhas.length} linha${linhas.length===1?"":"s"} e ${cabecalho.length} colunas.`;
@@ -950,11 +997,11 @@ function renderMapa(){
 }
 $("imp-mapa").addEventListener("change", e=>{ const k=e.target.dataset.campo; if(!k) return; if(e.target.value==="") delete IMP.mapa[k]; else IMP.mapa[k]=Number(e.target.value); renderMapa(); prevImport(); });
 function prevImport(){
-  IMP.res = IMP.linhas.map((c,i)=>montarLinha(c,IMP.mapa,i+2));
+  IMP.res = IMP.linhas.map((c,i)=>montarLinha(c,IMP.mapa,i+2,$("imp-plat").value));
   const ok=IMP.res.filter(r=>!r.erros.length), ruins=IMP.res.filter(r=>r.erros.length);
   $("imp-resumo").textContent=`${ok.length} pronta${ok.length===1?"":"s"} para importar · ${ruins.length} com problema`;
   $("imp-prev").innerHTML = IMP.res.slice(0,12).map(({linha:l,erros})=>`<tr>
-    <td>${l._linha}</td><td class="id">${esc(l.id_transacao)}</td><td>${l.data_venda?dt(l.data_venda).slice(0,8):"—"}</td>
+    <td>${l._linha}</td><td class="id">${esc(l.id_transacao)}</td><td>${l.data_venda?dt(l.data_venda).slice(0,8):"—"}</td><td>${l.vencimento?dia(l.vencimento):"—"}${l.parcela_num?` · parc. ${l.parcela_num}${l.parcela_total?"/"+l.parcela_total:""}`:""}</td>
     <td>${erros.length?`<span class="pill p-bad">${esc(erros[0])}</span>`:pill(STATUS,l.status)}</td>
     <td class="trunc">${esc(l.produto_nome)}</td><td class="num">${brl(l.valor_bruto)}</td><td class="num">${brl(l.valor_liquido)}</td>
     <td class="trunc">${esc(l.comprador_nome)}</td><td>${esc(l.cidade||"")}${l.uf?" / "+esc(l.uf):""}</td></tr>`).join("");
@@ -982,7 +1029,7 @@ $("imp-ir").addEventListener("click", async ()=>{
 });
 ["f-plat","f-status","f-periodo"].forEach(id=>$(id).addEventListener("change",renderVendas));
 $("f-q").addEventListener("input",renderVendas);
-
+ 
 /* ================= FLUXO ================= */
 function renderFluxo(){
   const meses=[...new Set(S.receb.map(r=>r.data_prevista.slice(0,7)))].sort();
@@ -992,7 +1039,7 @@ function renderFluxo(){
   const cSel=$("fx-cat").value, tSel=$("fx-tipo").value;
   $("fx-cat").innerHTML = optCats("subcategoria", null, "Todas as categorias") + `<option value="nc">Não classificado</option>`;
   $("fx-cat").value=cSel; $("fx-tipo").innerHTML = optCats("tipo_recebimento", null, "Todos os tipos"); $("fx-tipo").value=tSel;
-
+ 
   const sit=$("fx-sit").value, mes=$("fx-mes").value, cat=$("fx-cat").value, tipo=$("fx-tipo").value, q=$("fx-q").value.trim().toLowerCase();
   const list=S.receb.filter(r=> passaEmpresa(r.empresa_id) && (!sit||r.situacao===sit) && (!mes||r.data_prevista.startsWith(mes)) &&
     (!cat || (cat==="nc" ? r.subcategoria_id==null : String(r.subcategoria_id)===cat)) && (!tipo || String(r.tipo_recebimento_id)===tipo) &&
@@ -1039,7 +1086,7 @@ $("fx-rows").addEventListener("change", async e=>{
   }
   if (ok){ const x=await sb.from("vw_recebimentos").select("*").order("data_prevista").limit(3000); if(!x.error){S.receb=x.data; renderFluxo();} }
 });
-
+ 
 /* ================= CONFIGURAÇÃO ================= */
 function renderConfig(){
   if (subAtual==="produtos") renderCfgProdutos();
@@ -1048,29 +1095,39 @@ function renderConfig(){
   if (subAtual==="regras") renderCfgRegras();
   if (subAtual==="categorias") renderCfgCategorias();
 }
-
+ 
 /* --- produtos e split --- */
 $("cp-filtro").addEventListener("change", renderCfgProdutos);
+$("cp-busca").addEventListener("input", renderCfgProdutos);
 function renderCfgProdutos(){
-  const f=$("cp-filtro").value, e=empFiltro();
-  const lista=S.produtos.filter(p=> !f || (f==="sem" ? p.empresa_id==null : (e==="" || e==="sem" ? true : String(p.empresa_id)===e)))
-    .sort((a,b)=>(a.empresa_id==null?0:1)-(b.empresa_id==null?0:1) || a.nome.localeCompare(b.nome));
+  const f=$("cp-filtro").value, e=empFiltro(), q=semAcentoTxt($("cp-busca").value);
   const cont={}; S.vendas.forEach(v=>{ if(v.produto_id) cont[v.produto_id]=(cont[v.produto_id]||0)+1; });
-  $("cp-lista").innerHTML = lista.length ? lista.map(p=>{
-    const nsplit=S.splits.filter(s=>s.produto_id===p.id).length;
-    return `<button type="button" data-p="${p.id}" aria-current="${p.id===selProduto}">
-      <span>${esc(p.nome)}</span>
-      <small>${esc(PLAT[p.plataforma]||p.plataforma)} · ${cont[p.id]||0} venda${(cont[p.id]||0)===1?"":"s"} · ${p.empresa_id?esc(nomeEmpresa(p.empresa_id)):'<span class="pill p-warn">Sem empresa</span>'} · ${nsplit?"split configurado":'<span class="pill p-warn">Sem split</span>'}</small></button>`;
-  }).join("") : `<div class="empty">Nenhum produto neste filtro. Os produtos aparecem sozinhos na primeira venda.</div>`;
+  const variacoes={}; S.produtos.forEach(p=>{ if(p.agrupado_em) variacoes[p.agrupado_em]=(variacoes[p.agrupado_em]||0)+1; });
+  const visiveis=S.produtos.filter(p=>!p.agrupado_em && (!q || semAcentoTxt(p.nome).includes(q)));
+  const grupos=[{id:null, nome:"Sem empresa definida"}, ...S.empresas.map(x=>({id:x.id, nome:x.nome}))]
+    .filter(g=> f==="sem" ? g.id==null : f==="emp" ? (e && e!=="sem" ? String(g.id)===e : g.id==null) : true);
+  const item=p=>{ const nsplit=S.splits.filter(s=>s.produto_id===p.id).length, n=cont[p.id]||0;
+    return `<button type="button" data-p="${p.id}" aria-current="${p.id===selProduto}"><span>${esc(p.nome)}</span>
+      <small>${esc(PLAT[p.plataforma]||p.plataforma)} · ${n} venda${n===1?"":"s"}${variacoes[p.id]?` · ${variacoes[p.id]} variação${variacoes[p.id]===1?"":"ões"} junta${variacoes[p.id]===1?"":"s"}`:""} · ${nsplit?"split configurado":'<span class="pill p-warn">Sem split</span>'}</small></button>`; };
+  let html="";
+  grupos.forEach(g=>{
+    const lista=visiveis.filter(p=>(p.empresa_id??null)===g.id).sort((a,b)=>a.nome.localeCompare(b.nome));
+    if (!lista.length && (g.id!=null || f!=="sem")) { if (!(f==="emp")) return; }
+    html += `<h4><span>${esc(g.nome)}</span><span>${lista.length}</span></h4>` + (lista.length ? lista.map(item).join("") : `<div class="empty">Nenhum produto.</div>`);
+  });
+  $("cp-lista").innerHTML = html || `<div class="empty">Nenhum produto neste filtro. Os produtos aparecem sozinhos na primeira venda ou importação.</div>`;
   renderEditorProduto();
 }
+const semAcentoTxt = s => String(s??"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
 $("cp-lista").addEventListener("click", e=>{ const b=e.target.closest("button[data-p]"); if(b){ selProduto=Number(b.dataset.p); renderCfgProdutos(); }});
-
+ 
 let simValor=1000;
 function renderEditorProduto(){
   const p=S.produtos.find(x=>x.id===selProduto);
   if(!p){ $("cp-titulo").textContent="Selecione um produto"; $("cp-sub").textContent=""; $("cp-editor").innerHTML=`<p class="note">Escolha um produto na lista para definir a empresa emissora, as categorias e a divisão fiscal.</p>`; return; }
-  $("cp-titulo").textContent=p.nome; $("cp-sub").textContent=`${PLAT[p.plataforma]||p.plataforma} · código ${p.produto_id_plataforma}`;
+  $("cp-titulo").textContent=p.nome; $("cp-sub").textContent=`${PLAT[p.plataforma]||p.plataforma} · código ${String(p.produto_id_plataforma).replace(/^nome:/,"(pelo nome) ")}`;
+  const juntos=S.produtos.filter(x=>x.agrupado_em===p.id);
+  const outros=S.produtos.filter(x=>x.id!==p.id && !x.agrupado_em).sort((a,b)=>a.nome.localeCompare(b.nome));
   const linhas=et=>S.splits.filter(s=>s.produto_id===p.id && s.etapa===et).sort((a,b)=>a.ordem-b.ordem||a.id-b.id);
   const optEmp=(sel)=>`<option value="">— Empresa —</option>`+S.empresas.map(e=>`<option value="${e.id}" ${e.id===sel?"selected":""}>${esc(e.nome)}</option>`).join("");
   const optCop=(sel)=>`<option value="">— Coprodutor —</option>`+S.coprod.filter(c=>c.ativo||c.id===sel).map(c=>`<option value="${c.id}" ${c.id===sel?"selected":""}>${esc(c.nome)}</option>`).join("");
@@ -1078,7 +1135,7 @@ function renderEditorProduto(){
   const row=(s)=>`<div class="split-row" data-s="${s.id}">
       ${s.etapa==="externo" ? `<select data-f="coprodutor_id" aria-label="Coprodutor">${optCop(s.coprodutor_id)}</select>`
         : s.etapa==="interno" ? `<select data-f="empresa_id" aria-label="Empresa">${optEmp(s.empresa_id)}</select>`
-        : `<span class="note">${esc(nomeEmpresa(p.empresa_id))}</span>`}
+        : `<span class="note">Empresa principal: <b>${esc(nomeEmpresa(p.empresa_id))}</b></span>`}
       <span class="pct"><input type="number" step="any" min="0" max="100" data-f="percentual" value="${pct(s.percentual)}" aria-label="Percentual">%</span>
       ${s.etapa==="externo" ? `<span class="note">Sem nota</span>` : `<select data-f="tipo_nf" aria-label="Tipo de nota">${optNF(s.tipo_nf,false)}</select>`}
       ${s.etapa==="externo" ? `<input data-f="descricao_nf" value="${esc(s.descricao_nf||"")}" placeholder="Observação (opcional)" aria-label="Observação">`
@@ -1087,6 +1144,7 @@ function renderEditorProduto(){
   const somaP=linhas("principal").reduce((a,s)=>a+Number(s.percentual),0);
   $("cp-editor").innerHTML = `
     <div class="form-grid">
+      <label class="field full">Nome do produto<input id="pe-nome" value="${esc(p.nome)}"></label>
       <label class="field">Empresa emissora<select id="pe-emp">${optEmp(p.empresa_id)}</select></label>
       <label class="field">Categoria principal<select id="pe-cat">${optCats("categoria",p.categoria_id)}</select></label>
       <label class="field">Subcategoria<select id="pe-sub">${optCats("subcategoria",p.subcategoria_id)}</select></label>
@@ -1106,6 +1164,12 @@ function renderEditorProduto(){
         <button type="button" class="btn" data-add="principal" ${p.empresa_id?"":"disabled"}>+ Linha de nota</button></header>
       ${!p.empresa_id ? `<p class="note">Escolha a empresa emissora primeiro.</p>` : (linhas("principal").map(row).join("") || `<p class="note">Nenhuma linha. Adicione pelo menos uma.</p>`)}
       ${linhas("principal").length && Math.abs(somaP-1)>0.000001 ? `<p class="alert">A soma da empresa principal está em ${+(somaP*100).toFixed(4)}%. Ajuste para 100%.</p>`:""}
+    </fieldset>
+    <fieldset><legend>Variações do mesmo produto</legend>
+      <p class="note">Junte aqui os nomes diferentes que são o mesmo produto (por exemplo "Renovação Tubarões" e "RENOVAÇÃO PROGRAMA TUBARÕES"). As vendas passam para este produto e usam este split, inclusive as que chegarem depois.</p>
+      ${juntos.length ? juntos.map(x=>`<div class="merge-row"><span>${esc(x.nome)} <small class="note">(${esc(PLAT[x.plataforma]||x.plataforma)})</small></span><button type="button" class="btn link" data-separar="${x.id}">Separar</button></div>`).join("") : `<p class="note">Nenhuma variação junta.</p>`}
+      <div class="merge-row"><select id="pe-juntar" aria-label="Produto para juntar"><option value="">— Escolha um produto para juntar a este —</option>${outros.map(x=>`<option value="${x.id}">${esc(x.nome)} (${esc(PLAT[x.plataforma]||x.plataforma)})</option>`).join("")}</select>
+        <button type="button" class="btn" id="pe-juntar-btn">Juntar a este</button></div>
     </fieldset>
     <div class="sim"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
       <h3>Simulação</h3><label class="field check">Venda de R$ <input type="number" id="sim-v" step="0.01" value="${simValor}" style="width:120px"></label></div>
@@ -1127,6 +1191,12 @@ function renderSim(p){
 $("cp-editor").addEventListener("input", e=>{ if(e.target.id==="sim-v"){ simValor=e.target.value; renderSim(S.produtos.find(x=>x.id===selProduto)); }});
 $("cp-editor").addEventListener("change", async e=>{
   const p=S.produtos.find(x=>x.id===selProduto); if(!p) return; const el=e.target;
+  if (el.id==="pe-nome"){
+    const nome=el.value.trim(); if(!nome){ toast("O nome não pode ficar vazio"); el.value=p.nome; return; }
+    if (await salvar("produtos", p.id, {nome, nome_editado:true}, "Nome do produto salvo")){ p.nome=nome; p.nome_editado=true; S.vendas.forEach(v=>{ if(v.produto_id===p.id) v.produto_nome=nome; }); renderCfgProdutos(); }
+    return;
+  }
+  if (el.id==="pe-juntar") return;
   if (el.id==="pe-emp"||el.id==="pe-cat"||el.id==="pe-sub"){
     const campo={ "pe-emp":"empresa_id","pe-cat":"categoria_id","pe-sub":"subcategoria_id"}[el.id];
     const val=el.value?Number(el.value):null;
@@ -1142,7 +1212,19 @@ $("cp-editor").addEventListener("change", async e=>{
 });
 $("cp-editor").addEventListener("click", async e=>{
   const p=S.produtos.find(x=>x.id===selProduto); if(!p) return;
-  const add=e.target.closest("[data-add]"), del=e.target.closest("[data-del]");
+  const add=e.target.closest("[data-add]"), del=e.target.closest("[data-del]"), sep=e.target.closest("[data-separar]");
+  if (e.target.id==="pe-juntar-btn"){
+    const orig=Number($("pe-juntar").value); if(!orig){ toast("Escolha o produto que quer juntar"); return; }
+    if (e.target.dataset.confirma!=="1"){ e.target.dataset.confirma="1"; e.target.textContent="Confirmar: juntar"; return; }
+    const { error } = await sb.rpc("agrupar_produto", {p_origem:orig, p_destino:p.id});
+    if (error){ toast("Não foi possível juntar: "+error.message); return; }
+    toast("Produtos juntos"); await carregarTudo(false); return;
+  }
+  if (sep){
+    const { error } = await sb.rpc("separar_produto", {p_origem:Number(sep.dataset.separar)});
+    if (error){ toast("Não foi possível separar: "+error.message); return; }
+    toast("Produto separado"); await carregarTudo(false); return;
+  }
   if (add){
     const et=add.dataset.add;
     if (et==="externo" && !S.coprod.some(c=>c.ativo)){ toast("Cadastre um coprodutor externo primeiro"); abrirSub("coprodutores"); return; }
@@ -1163,7 +1245,7 @@ $("cp-editor").addEventListener("click", async e=>{
   }
 });
 function renderCfgListaLeve(){ const y=$("cp-lista").scrollTop; const keep=selProduto; renderCfgProdutos(); selProduto=keep; $("cp-lista").scrollTop=y; }
-
+ 
 /* --- empresas --- */
 const CAMPOS_EMPRESA = [
   ["Identificação", [["nome","Razão social","text"],["cnpj","CNPJ (só números)","text"],["nome_fantasia","Nome fantasia","text"],
@@ -1208,7 +1290,7 @@ $("ce-form").addEventListener("submit", async ev=>{
   if (!dados.nome){ toast("A razão social é obrigatória"); return; }
   if (await salvar("empresas", e.id, dados, "Empresa salva")){ Object.assign(e,dados); await carregarTudo(false); }
 });
-
+ 
 /* --- coprodutores --- */
 function renderCfgCoprod(){
   $("cc-rows").innerHTML = S.coprod.length ? S.coprod.map(c=>`<tr data-c="${c.id}">
@@ -1238,7 +1320,7 @@ $("cc-novo").addEventListener("submit", async e=>{
   if (error){ toast("Não foi possível adicionar: "+error.message); return; }
   S.coprod.push(data); e.target.reset(); renderCfgCoprod(); toast("Coprodutor adicionado");
 });
-
+ 
 /* --- regras de recebimento --- */
 function renderCfgRegras(){
   $("cr-rows").innerHTML = S.regras.map(r=>`<tr data-r="${r.id}">
@@ -1265,7 +1347,7 @@ $("cr-novo").addEventListener("submit", async e=>{
   if (error){ toast(/duplicate|unique/i.test(error.message) ? "Já existe uma regra para essa plataforma e forma de pagamento." : "Não foi possível adicionar: "+error.message); return; }
   await carregarTudo(false); toast("Regra adicionada");
 });
-
+ 
 /* --- categorias --- */
 const GRUPOS = [["categoria","Categoria principal"],["subcategoria","Subcategoria"],["tipo_recebimento","Tipo de recebimento"]];
 function renderCfgCategorias(){
@@ -1287,7 +1369,7 @@ $("cat-cols").addEventListener("submit", async e=>{
   if (error){ toast(/duplicate|unique/i.test(error.message) ? "Essa categoria já existe." : "Não foi possível adicionar: "+error.message); return; }
   S.cats.push(data); renderCfgCategorias(); toast("Categoria adicionada");
 });
-
+ 
 iniciar();
 </script>
 </body>
