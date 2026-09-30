@@ -6,56 +6,67 @@
 <title>Captação de Vendas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-</head><body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
-/* Layout: painel operacional — faixa de fontes (plataformas) no topo, totais, depois o livro de vendas normalizado com painel lateral de detalhe */
+/* Layout: painel operacional — login, depois abas Vendas / Produtos; vendas com fontes, totais e livro com painel de detalhe */
 :root{
   --bg:#f5f6f4; --surface:#ffffff; --surface-2:#eef0ed; --line:#dde1dc;
-  --fg:#1c2421; --muted:#5f6b66; --accent:#1f6f5c; --accent-soft:#dcefe8;
+  --fg:#1c2421; --muted:#5f6b66; --accent:#1f6f5c; --accent-soft:#dcefe8; --on-accent:#ffffff;
   --ok:#1f7a4d; --ok-soft:#dff3e7; --warn:#a0620b; --warn-soft:#fbefd9;
   --bad:#b3372e; --bad-soft:#fbe3e0; --info:#2d5d9f; --info-soft:#e1ebf8;
   --font-ui:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   --font-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
-  --r:10px;
+  --r:10px; color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+@media (prefers-color-scheme: dark){:root{
   --bg:#121715; --surface:#1a211e; --surface-2:#222b27; --line:#2e3833;
-  --fg:#e5ebe8; --muted:#95a39d; --accent:#5cc4a4; --accent-soft:#1d3a32;
+  --fg:#e5ebe8; --muted:#95a39d; --accent:#5cc4a4; --accent-soft:#1d3a32; --on-accent:#0f1513;
   --ok:#6fd39c; --ok-soft:#1c3527; --warn:#e6b35c; --warn-soft:#3a2d17;
   --bad:#f08a80; --bad-soft:#3d2220; --info:#8db6ee; --info-soft:#1f2c40; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#121715; --surface:#1a211e; --surface-2:#222b27; --line:#2e3833;
-  --fg:#e5ebe8; --muted:#95a39d; --accent:#5cc4a4; --accent-soft:#1d3a32;
-  --ok:#6fd39c; --ok-soft:#1c3527; --warn:#e6b35c; --warn-soft:#3a2d17;
-  --bad:#f08a80; --bad-soft:#3d2220; --info:#8db6ee; --info-soft:#1f2c40; color-scheme:dark}
 *{box-sizing:border-box}
+html,body{margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:14px;line-height:1.45}
-.wrap{max-width:1280px;margin:0 auto;padding-inline:20px;padding-block:20px 48px;display:flex;flex-direction:column;gap:20px}
-header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+[hidden]{display:none!important}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:18px 48px;display:flex;flex-direction:column;gap:18px}
 .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
 h1{margin:2px 0 0;font-size:24px;font-weight:700;text-wrap:balance}
-.beta{display:inline-block;margin-left:8px;vertical-align:middle;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
-.note{font-size:12.5px;color:var(--muted);max-width:62ch}
-.controls{display:flex;flex-wrap:wrap;gap:8px}
-select,input[type=search]{font:inherit;font-size:13px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
-input[type=search]{width:220px;max-width:100%}
+.note{font-size:12.5px;color:var(--muted);max-width:62ch;margin:0}
+select,input{font:inherit;font-size:13px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+button{font:inherit;cursor:pointer}
+.btn{font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:7px 12px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn:disabled{opacity:.6;cursor:default}
 select:focus-visible,input:focus-visible,button:focus-visible,tr:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
-/* plataformas */
-.sources{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.src{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+/* login */
+.login{min-height:100vh;display:grid;place-items:center;padding:16px}
+.login form{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 24px;display:flex;flex-direction:column;gap:14px}
+.login label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.login input{font-size:15px;padding:10px 12px}
+.login .btn{padding:11px;font-size:15px}
+.err{color:var(--bad);font-size:13px;font-weight:600;min-height:1em;margin:0}
+
+/* topo */
+.topbar{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.userbox{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;padding:9px 14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent)}
+.tabs .badge{display:inline-block;margin-left:6px;background:var(--warn-soft);color:var(--warn);border-radius:99px;padding:0 7px;font-size:11.5px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input[type=search]{width:220px;max-width:100%}
+.alert{background:var(--warn-soft);color:var(--warn);border-radius:var(--r);padding:10px 14px;font-size:13px;font-weight:500;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.alert button{border:0;background:none;color:inherit;font-weight:700;text-decoration:underline;padding:0}
+
+/* fontes */
+.sources{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.src{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
 .src-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.src-name{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
-.mono-badge{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--surface-2);color:var(--fg)}
-.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ok);font-weight:600}
-.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
-.live.stale{color:var(--warn)} .live.stale::before{background:var(--warn)}
-.src-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.src-stats div{display:flex;flex-direction:column}
-.src-stats b{font-size:16px;font-variant-numeric:tabular-nums}
-.src-stats span{font-size:11.5px;color:var(--muted)}
-.src-foot{font-size:12px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.src-foot code{font-family:var(--font-mono);font-size:11.5px}
+.src-name{font-weight:700;font-size:14.5px}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ok)}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.live.stale{color:var(--warn)} .live.off{color:var(--muted)}
+.src small{color:var(--muted);font-size:12px}
 
 /* totais */
 .totals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
@@ -63,334 +74,401 @@ select:focus-visible,input:focus-visible,button:focus-visible,tr:focus-visible{o
 .totals div:last-child{border-right:0}
 .totals span{font-size:12px;color:var(--muted)}
 .totals b{font-size:19px;font-variant-numeric:tabular-nums;font-weight:700}
-.totals .neg b{color:var(--bad)}
-.totals .main b{color:var(--accent)}
+.totals .neg b{color:var(--bad)} .totals .main b{color:var(--accent)}
 
 /* livro */
-.ledger{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+.ledger{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:16px;align-items:start}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .panel-head h2{margin:0;font-size:14px;font-weight:700}
 .panel-head small{color:var(--muted);font-size:12px}
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
-th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface)}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
-tbody tr{cursor:pointer}
-tbody tr:hover{background:var(--surface-2)}
+tbody tr.clic{cursor:pointer}
+tbody tr.clic:hover{background:var(--surface-2)}
 tbody tr.sel{background:var(--accent-soft)}
 td.num,th.num{text-align:right}
 .id{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
-.prod{max-width:200px;overflow:hidden;text-overflow:ellipsis}
-.plat{display:inline-flex;align-items:center;gap:6px;font-weight:600}
-.plat i{font-style:normal;width:18px;height:18px;border-radius:5px;background:var(--surface-2);display:grid;place-items:center;font-size:10px;font-weight:700}
+.trunc{max-width:220px;overflow:hidden;text-overflow:ellipsis}
 .pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11.5px;font-weight:600}
-.p-ok{background:var(--ok-soft);color:var(--ok)}
-.p-warn{background:var(--warn-soft);color:var(--warn)}
-.p-bad{background:var(--bad-soft);color:var(--bad)}
-.p-info{background:var(--info-soft);color:var(--info)}
+.p-ok{background:var(--ok-soft);color:var(--ok)} .p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--info-soft);color:var(--info)}
 .p-mute{background:var(--surface-2);color:var(--muted)}
 .empty{padding:32px 16px;text-align:center;color:var(--muted)}
 
-/* detalhe */
-.detail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.detail{position:sticky;top:12px}
 .detail-body{padding:14px 16px;display:flex;flex-direction:column;gap:14px}
 dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:13px}
 dt{color:var(--muted)} dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
 .sec-title{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px}
-.map{display:flex;flex-direction:column;gap:4px;font-size:12.5px}
-.map div{display:grid;grid-template-columns:1fr 16px 1fr;gap:6px;align-items:center}
-.map code{font-family:var(--font-mono);font-size:11.5px;background:var(--surface-2);padding:2px 6px;border-radius:5px;overflow-wrap:anywhere}
-.map .arrow{color:var(--muted);text-align:center}
-pre{margin:0;font-family:var(--font-mono);font-size:11.5px;background:var(--surface-2);border-radius:8px;padding:10px 12px;overflow-x:auto;max-height:220px;line-height:1.5}
-.tabs{display:flex;gap:4px}
-.tabs button{font:inherit;font-size:12px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:7px;padding:4px 10px;cursor:pointer}
-.tabs button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+pre{margin:0;font-family:var(--font-mono);font-size:11.5px;background:var(--surface-2);border-radius:8px;padding:10px 12px;overflow:auto;max-height:260px;line-height:1.5}
 
-/* fluxo */
-.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
-.flow div{padding:12px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:3px}
-.flow div:last-child{border-right:0}
-.flow b{font-size:13px}
-.flow span{font-size:12px;color:var(--muted)}
-.flow .step{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:99px;font-weight:600;font-size:13px;z-index:10}
 
-@media (max-width:1000px){
-  .ledger{grid-template-columns:1fr}
-  .detail{position:static}
+@media (max-width:1050px){
+  .ledger{grid-template-columns:1fr} .detail{position:static}
+  .sources{grid-template-columns:repeat(2,minmax(0,1fr))}
   .totals{grid-template-columns:repeat(3,minmax(0,1fr))}
   .totals div:nth-child(3){border-right:0}
   .totals div:nth-child(n+4){border-top:1px solid var(--line)}
 }
-@media (max-width:760px){
-  .sources{grid-template-columns:1fr}
-  .flow{grid-template-columns:1fr 1fr}
-  .flow div:nth-child(2){border-right:0}
-  .flow div:nth-child(n+3){border-top:1px solid var(--line)}
-}
-@media (max-width:480px){
+@media (max-width:520px){
   .wrap{padding-inline:16px}
+  .sources{grid-template-columns:1fr}
   .totals{grid-template-columns:1fr 1fr}
   .totals div{border-right:1px solid var(--line)!important;border-top:1px solid var(--line)}
   .totals div:nth-child(2n){border-right:0!important}
   .totals div:nth-child(-n+2){border-top:0}
-  .flow{grid-template-columns:1fr}
-  .flow div{border-right:0!important;border-top:1px solid var(--line)}
-  .flow div:first-child{border-top:0}
   input[type=search]{width:100%}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
+</head>
+<body>
 
-<div class="wrap">
-  <header class="top">
+<!-- LOGIN -->
+<section class="login" id="tela-login" hidden>
+  <form id="form-login">
+    <div>
+      <div class="eyebrow">Automação faturamento</div>
+      <h1>Entrar</h1>
+    </div>
+    <label>E-mail<input type="email" id="email" autocomplete="username" required></label>
+    <label>Senha<input type="password" id="senha" autocomplete="current-password" required></label>
+    <p class="err" id="login-erro" aria-live="polite"></p>
+    <button class="btn primary" type="submit" id="btn-entrar">Entrar</button>
+  </form>
+</section>
+
+<!-- APP -->
+<div class="wrap" id="tela-app" hidden>
+  <header class="topbar">
     <div>
       <div class="eyebrow">Automação faturamento · Contas a receber</div>
-      <h1>Captação de vendas <span class="beta">Prévia beta</span></h1>
-      <p class="note">Vendas da Hotmart, Ticto e Assiny chegam por webhook, são convertidas para um formato único e ligadas à empresa emissora. Todos os dados abaixo são exemplos fictícios.</p>
+      <h1>Captação de vendas</h1>
     </div>
+    <div class="userbox">
+      <span id="usuario"></span>
+      <button class="btn" id="btn-atualizar" type="button">Atualizar</button>
+      <button class="btn" id="btn-sair" type="button">Sair</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-vendas" aria-selected="true" type="button">Vendas</button>
+    <button role="tab" id="tab-produtos" aria-selected="false" type="button">Produtos<span class="badge" id="badge-produtos" hidden></span></button>
+  </nav>
+
+  <!-- VENDAS -->
+  <section id="aba-vendas" style="display:flex;flex-direction:column;gap:18px">
     <div class="controls">
-      <label class="sr" hidden for="f-emp">Empresa</label>
       <select id="f-emp" aria-label="Empresa"></select>
       <select id="f-plat" aria-label="Plataforma">
         <option value="">Todas as plataformas</option>
-        <option>Hotmart</option><option>Ticto</option><option>Assiny</option>
+        <option value="hotmart">Hotmart</option><option value="asaas">Asaas</option>
+        <option value="ticto">Ticto</option><option value="assiny">Assiny</option>
       </select>
       <select id="f-status" aria-label="Status">
         <option value="">Todos os status</option>
         <option value="aprovada">Aprovada</option>
         <option value="aguardando">Aguardando pagamento</option>
+        <option value="em_disputa">Em disputa</option>
         <option value="reembolsada">Reembolsada</option>
         <option value="chargeback">Chargeback</option>
         <option value="cancelada">Cancelada</option>
       </select>
-      <input type="search" id="f-q" placeholder="Buscar produto, comprador ou ID" aria-label="Buscar">
+      <select id="f-periodo" aria-label="Período">
+        <option value="tudo">Todo o período</option>
+        <option value="hoje">Hoje</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="mes">Este mês</option>
+        <option value="mespassado">Mês passado</option>
+      </select>
+      <input type="search" id="f-q" placeholder="Buscar produto, comprador, CPF ou transação" aria-label="Buscar">
     </div>
-  </header>
 
-  <section class="flow" aria-label="Como a venda entra no sistema">
-    <div><span class="step">1 · Recebe</span><b>Webhook da plataforma</b><span>Cada evento de compra chega em tempo real</span></div>
-    <div><span class="step">2 · Normaliza</span><b>Formato único</b><span>Status, valores e taxas no mesmo padrão</span></div>
-    <div><span class="step">3 · Classifica</span><b>Empresa emissora</b><span>Pelo produto, conforme a regra fiscal de cada empresa</span></div>
-    <div><span class="step">4 · Encaminha</span><b>Fila de notas</b><span>Vendas aprovadas vão para emissão na Notazz</span></div>
+    <div class="alert" id="alerta-produtos" hidden></div>
+
+    <section class="sources" id="sources" aria-label="Plataformas"></section>
+    <section class="totals" id="totals" aria-label="Totais do filtro"></section>
+
+    <section class="ledger">
+      <div class="panel">
+        <div class="panel-head"><h2>Vendas</h2><small id="count"></small></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Data</th><th>Plataforma</th><th>Transação</th><th>Produto</th><th>Comprador</th>
+              <th>Pagamento</th><th class="num">Bruto</th><th class="num">Taxa</th><th class="num">Líquido</th>
+              <th>Status</th><th>Endereço</th><th>Nota fiscal</th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <div class="empty" id="empty" hidden></div>
+        </div>
+      </div>
+      <aside class="panel detail" aria-live="polite">
+        <div class="panel-head"><h2>Detalhe da venda</h2><small id="d-id"></small></div>
+        <div class="detail-body" id="detail"></div>
+      </aside>
+    </section>
   </section>
 
-  <section class="sources" id="sources" aria-label="Plataformas conectadas"></section>
-
-  <section class="totals" id="totals" aria-label="Totais do filtro"></section>
-
-  <section class="ledger">
+  <!-- PRODUTOS -->
+  <section id="aba-produtos" hidden style="flex-direction:column;gap:14px">
+    <p class="note">Os produtos aparecem aqui sozinhos na primeira venda. Escolha a empresa que emite a nota de cada um. As vendas do produto passam para a empresa escolhida.</p>
     <div class="panel">
-      <div class="panel-head">
-        <h2>Vendas captadas</h2>
-        <small id="count"></small>
-      </div>
+      <div class="panel-head"><h2>Produtos</h2><small id="count-prod"></small></div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr>
-            <th>Data</th><th>Plataforma</th><th>Transação</th><th>Produto</th><th>Comprador</th>
-            <th>Pagamento</th><th class="num">Bruto</th><th class="num">Taxa</th><th class="num">Líquido</th>
-            <th>Status</th><th>Empresa</th><th>Nota fiscal</th>
-          </tr></thead>
-          <tbody id="rows"></tbody>
+          <thead><tr><th>Plataforma</th><th>Código na plataforma</th><th>Produto</th><th class="num">Vendas</th><th>Empresa emissora</th></tr></thead>
+          <tbody id="rows-prod"></tbody>
         </table>
-        <div class="empty" id="empty" hidden>Nenhuma venda com esses filtros.</div>
+        <div class="empty" id="empty-prod" hidden>Nenhum produto ainda. Eles aparecem aqui quando a primeira venda chega.</div>
       </div>
     </div>
-
-    <aside class="panel detail" aria-live="polite">
-      <div class="panel-head"><h2>Detalhe da venda</h2><small id="d-id"></small></div>
-      <div class="detail-body" id="detail"></div>
-    </aside>
   </section>
 </div>
 
+<div class="toast" id="toast" hidden></div>
+
 <script>
-const EMPRESAS = ["Empresa A (exemplo)","Empresa B (exemplo)","Empresa C (exemplo)"];
-const PRODUTOS = [
-  {nome:"Curso Leilão de Imóveis do Zero",preco:997,emp:0},
-  {nome:"Mentoria Arrematante Pro",preco:2497,emp:1},
-  {nome:"Workshop Due Diligence em Leilões",preco:297,emp:0},
-  {nome:"Comunidade Smart (assinatura mensal)",preco:97,emp:2},
-  {nome:"E-book Checklist do Edital",preco:47,emp:2},
-  {nome:"Imersão Leilão Judicial",preco:1497,emp:1}
-];
-const NOMES = ["Mariana Costa","Rafael Lima","Juliana Alves","Bruno Rocha","Patrícia Nunes","Diego Martins","Camila Ferreira","Thiago Souza","Aline Ribeiro","Lucas Pereira","Fernanda Dias","Gustavo Melo","Renata Barros","Felipe Castro","Larissa Moura","André Pinto"];
-const TAXAS = {Hotmart:.099, Ticto:.069, Assiny:.059};
-const FIXA = {Hotmart:1, Ticto:1, Assiny:.99};
+const SUPABASE_URL = "https://piongychxvpfuafhcpuf.supabase.co";
+const SUPABASE_KEY = "sb_publishable_6cyhKt4d6EMMlIamYCBmFQ_mRsMQk-u";
+const EMPRESA_PADRAO = "TUBAR"; // Tubarões dos Leilões
 
-/* Como cada plataforma nomeia o status no webhook (ilustrativo; confirmar na documentação de cada uma) */
-const RAW_STATUS = {
-  Hotmart:{aprovada:"PURCHASE_APPROVED",aguardando:"PURCHASE_BILLET_PRINTED",reembolsada:"PURCHASE_REFUNDED",chargeback:"PURCHASE_CHARGEBACK",cancelada:"PURCHASE_CANCELED"},
-  Ticto:{aprovada:"authorized",aguardando:"waiting_payment",reembolsada:"refunded",chargeback:"chargeback",cancelada:"canceled"},
-  Assiny:{aprovada:"approved",aguardando:"pending",reembolsada:"refunded",chargeback:"chargeback",cancelada:"canceled"}
-};
-const STATUS_LABEL = {aprovada:["Aprovada","p-ok"],aguardando:["Aguardando pgto","p-warn"],reembolsada:["Reembolsada","p-mute"],chargeback:["Chargeback","p-bad"],cancelada:["Cancelada","p-mute"]};
-const NF_LABEL = {emitida:["Emitida","p-ok"],fila:["Na fila","p-info"],nao:["Não se aplica","p-mute"],cancelar:["Cancelar NF","p-bad"]};
-
-/* gerador determinístico */
-let seed = 42; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
-const pick = a => a[Math.floor(rnd()*a.length)];
-
-const vendas = [];
-const base = new Date(2026,8,29,20,10);
-for (let i=0;i<46;i++){
-  const plat = pick(["Hotmart","Hotmart","Ticto","Assiny"]);
-  const p = pick(PRODUTOS);
-  const r = rnd();
-  const status = r<.72?"aprovada":r<.82?"aguardando":r<.91?"reembolsada":r<.95?"chargeback":"cancelada";
-  const pg = pick(["Pix","Cartão","Cartão","Boleto"]);
-  const parcelas = pg==="Cartão" && p.preco>200 ? pick([1,3,6,10,12]) : 1;
-  const bruto = p.preco;
-  const taxa = +(bruto*TAXAS[plat] + FIXA[plat]).toFixed(2);
-  const d = new Date(base.getTime() - i*(rnd()*5+2)*3600*1000);
-  let nf = "nao";
-  if (status==="aprovada") nf = rnd()<.7 ? "emitida" : "fila";
-  if ((status==="reembolsada"||status==="chargeback") && rnd()<.6) nf = "cancelar";
-  const pre = {Hotmart:"HP",Ticto:"TC",Assiny:"AS"}[plat];
-  const id = pre + String(Math.floor(rnd()*9e9)+1e9);
-  vendas.push({id,plat,prod:p.nome,emp:p.emp,cli:NOMES[i%NOMES.length],pg,parcelas,bruto,taxa,liq:+(bruto-taxa).toFixed(2),status,nf,data:d});
-}
-
-const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-const dt = d => d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
-const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-$("f-emp").innerHTML = `<option value="">Todas as empresas</option>` + EMPRESAS.map((e,i)=>`<option value="${i}">${e}</option>`).join("");
 
-let selId = null, rawTab = "raw";
+const PLAT = {hotmart:"Hotmart", asaas:"Asaas", ticto:"Ticto", assiny:"Assiny"};
+const STATUS = {aprovada:["Aprovada","p-ok"], aguardando:["Aguardando pgto","p-warn"], em_disputa:["Em disputa","p-bad"],
+  reembolsada:["Reembolsada","p-mute"], chargeback:["Chargeback","p-bad"], cancelada:["Cancelada","p-mute"]};
+const NF = {nao_se_aplica:["Não se aplica","p-mute"], na_fila:["Na fila","p-info"], emitida:["Emitida","p-ok"],
+  cancelar:["Cancelar NF","p-bad"], cancelada:["Cancelada","p-mute"]};
+const ENDERECO = {checkout:["Checkout","p-ok"], padrao_ddd:["Padrão DDD","p-info"], manual:["Manual","p-ok"], pendente:["Pendente","p-bad"]};
+const PAGTO = {pix:"Pix", cartao:"Cartão", boleto:"Boleto", outro:"Outro"};
 
-function filtered(){
-  const e=$("f-emp").value, p=$("f-plat").value, s=$("f-status").value, q=$("f-q").value.trim().toLowerCase();
-  return vendas.filter(v =>
-    (e===""||v.emp==e) && (!p||v.plat===p) && (!s||v.status===s) &&
-    (!q || (v.prod+" "+v.cli+" "+v.id).toLowerCase().includes(q)));
+const brl = v => v==null ? "—" : Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const dt = s => s ? new Date(s).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo",day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pill = (map,k) => { const [t,c] = map[k] || [k||"—","p-mute"]; return `<span class="pill ${c}">${esc(t)}</span>`; };
+function doc(d){ const n=String(d||"").replace(/\D/g,"");
+  if(n.length===11) return n.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,"$1.$2.$3-$4");
+  if(n.length===14) return n.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,"$1.$2.$3/$4-$5");
+  return d||"—"; }
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>t.hidden=true,2600); }
+
+let empresas=[], produtos=[], vendas=[], ultimos={}, selId=null, timer=null;
+
+/* ---------- login ---------- */
+async function iniciar(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if (session) entrarApp(session); else mostrarLogin();
+  sb.auth.onAuthStateChange((ev, s) => { if (ev==="SIGNED_OUT") mostrarLogin(); });
+}
+function mostrarLogin(){ $("tela-app").hidden=true; $("tela-login").hidden=false; clearInterval(timer); $("email").focus(); }
+async function entrarApp(session){
+  $("tela-login").hidden=true; $("tela-app").hidden=false;
+  $("usuario").textContent = session.user.email;
+  await carregarTudo(true);
+  clearInterval(timer); timer=setInterval(()=>carregarTudo(false), 60000);
+}
+$("form-login").addEventListener("submit", async e=>{
+  e.preventDefault();
+  $("login-erro").textContent=""; $("btn-entrar").disabled=true; $("btn-entrar").textContent="Entrando…";
+  const { data, error } = await sb.auth.signInWithPassword({ email:$("email").value.trim(), password:$("senha").value });
+  $("btn-entrar").disabled=false; $("btn-entrar").textContent="Entrar";
+  if (error){ $("login-erro").textContent = /invalid/i.test(error.message) ? "E-mail ou senha incorretos." : "Não foi possível entrar: "+error.message; return; }
+  $("senha").value=""; entrarApp(data.session);
+});
+$("btn-sair").onclick = async ()=>{ await sb.auth.signOut(); mostrarLogin(); };
+$("btn-atualizar").onclick = ()=>carregarTudo(false).then(()=>toast("Atualizado"));
+
+/* ---------- dados ---------- */
+async function carregarTudo(primeiraVez){
+  const [e,p,v] = await Promise.all([
+    sb.from("empresas").select("id,nome,cnpj").order("nome"),
+    sb.from("produtos").select("id,plataforma,produto_id_plataforma,nome,empresa_id").order("nome"),
+    sb.from("vendas").select("*").order("data_venda",{ascending:false}).limit(1000)
+  ]);
+  const erro = e.error||p.error||v.error;
+  if (erro){ if (/JWT|auth/i.test(erro.message)) { await sb.auth.signOut(); return; } toast("Erro ao carregar: "+erro.message); return; }
+  empresas=e.data; produtos=p.data; vendas=v.data;
+
+  ultimos={};
+  await Promise.all(Object.keys(PLAT).map(async pl=>{
+    const r = await sb.from("eventos_webhook").select("recebido_em").eq("plataforma",pl).order("recebido_em",{ascending:false}).limit(1);
+    ultimos[pl] = r.data && r.data[0] ? r.data[0].recebido_em : null;
+  }));
+
+  if (primeiraVez){
+    const atual = $("f-emp").value;
+    $("f-emp").innerHTML = `<option value="">Todas as empresas</option><option value="sem">Sem empresa definida</option>` +
+      empresas.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
+    const padrao = empresas.find(x=>x.nome.toUpperCase().includes(EMPRESA_PADRAO));
+    $("f-emp").value = atual || (padrao ? padrao.id : "");
+  }
+  renderVendas(); renderProdutos();
 }
 
-function renderSources(){
-  const agora = base.getTime();
-  $("sources").innerHTML = ["Hotmart","Ticto","Assiny"].map(pl=>{
-    const vs = vendas.filter(v=>v.plat===pl);
-    const ult = vs.reduce((m,v)=>v.data>m?v.data:m,new Date(0));
-    const min = Math.round((agora-ult)/60000);
-    const hoje = vs.filter(v=>v.data.toDateString()===base.toDateString() && v.status==="aprovada");
-    const stale = min>180;
-    const rot = min<60?`${min} min`:`${Math.round(min/60)} h`;
-    return `<article class="src">
-      <div class="src-head">
-        <div class="src-name"><span class="mono-badge">${pl[0]}</span>${pl}</div>
-        <span class="live ${stale?"stale":""}">${stale?"Sem eventos recentes":"Recebendo"}</span>
-      </div>
-      <div class="src-stats">
-        <div><b>${hoje.length}</b><span>aprovadas hoje</span></div>
-        <div><b>${brl(hoje.reduce((a,v)=>a+v.liq,0)).replace(",00","")}</b><span>líquido hoje</span></div>
-        <div><b>${(TAXAS[pl]*100).toFixed(1).replace(".",",")}%</b><span>taxa + ${brl(FIXA[pl])}</span></div>
-      </div>
-      <div class="src-foot"><span>Último evento há ${rot}</span><code>/webhook/${pl.toLowerCase()}</code></div>
-    </article>`;
+/* ---------- vendas ---------- */
+function noPeriodo(iso){
+  const p=$("f-periodo").value; if(p==="tudo") return true;
+  const d=new Date(iso), agora=new Date();
+  const ini=new Date(agora); ini.setHours(0,0,0,0);
+  if(p==="hoje") return d>=ini;
+  if(p==="7"){ ini.setDate(ini.getDate()-6); return d>=ini; }
+  if(p==="mes"){ ini.setDate(1); return d>=ini; }
+  if(p==="mespassado"){ const a=new Date(agora.getFullYear(),agora.getMonth()-1,1), b=new Date(agora.getFullYear(),agora.getMonth(),1); return d>=a && d<b; }
+  return true;
+}
+function filtradas(){
+  const e=$("f-emp").value, pl=$("f-plat").value, s=$("f-status").value, q=$("f-q").value.trim().toLowerCase();
+  const qn=q.replace(/\D/g,"");
+  return vendas.filter(v=>
+    (e==="" || (e==="sem" ? v.empresa_id==null : String(v.empresa_id)===e)) &&
+    (!pl || v.plataforma===pl) && (!s || v.status===s) && noPeriodo(v.data_venda) &&
+    (!q || [v.produto_nome,v.comprador_nome,v.comprador_email,v.id_transacao].join(" ").toLowerCase().includes(q) ||
+      (qn.length>=3 && String(v.comprador_documento||"").includes(qn))));
+}
+function renderVendas(){
+  const semEmpresa = produtos.filter(p=>p.empresa_id==null).length;
+  $("badge-produtos").hidden = !semEmpresa; $("badge-produtos").textContent = semEmpresa;
+  const al=$("alerta-produtos");
+  if (semEmpresa){ al.hidden=false; al.innerHTML=`${semEmpresa} produto${semEmpresa>1?"s":""} sem empresa definida. As vendas desses produtos só aparecem em "Sem empresa definida". <button type="button" id="ir-produtos">Definir empresas</button>`; $("ir-produtos").onclick=()=>abrirAba("produtos"); }
+  else al.hidden=true;
+
+  const agora=Date.now();
+  $("sources").innerHTML = Object.entries(PLAT).map(([k,nome])=>{
+    const u=ultimos[k];
+    if(!u) return `<article class="src"><div class="src-head"><span class="src-name">${nome}</span><span class="live off">Sem eventos</span></div><small>Nenhum evento recebido ainda</small></article>`;
+    const min=Math.round((agora-new Date(u))/60000);
+    const rot = min<1?"agora": min<60?`há ${min} min`: min<1440?`há ${Math.round(min/60)} h`:`há ${Math.round(min/1440)} dias`;
+    const stale = min>1440;
+    return `<article class="src"><div class="src-head"><span class="src-name">${nome}</span><span class="live ${stale?"stale":""}">${stale?"Sem eventos recentes":"Recebendo"}</span></div><small>Último evento ${rot}</small></article>`;
   }).join("");
-}
 
-function renderTotals(list){
-  const ap = list.filter(v=>v.status==="aprovada");
-  const dev = list.filter(v=>v.status==="reembolsada"||v.status==="chargeback");
-  const pend = list.filter(v=>v.status==="aguardando");
-  const sum = (a,k)=>a.reduce((s,v)=>s+v[k],0);
+  const list=filtradas();
+  const soma=(a,k)=>a.reduce((s,v)=>s+Number(v[k]||0),0);
+  const ap=list.filter(v=>v.status==="aprovada"), pend=list.filter(v=>v.status==="aguardando"),
+        dev=list.filter(v=>["reembolsada","chargeback","em_disputa"].includes(v.status));
   $("totals").innerHTML = `
-    <div><span>Bruto aprovado</span><b>${brl(sum(ap,"bruto"))}</b></div>
-    <div class="neg"><span>Taxas das plataformas</span><b>− ${brl(sum(ap,"taxa"))}</b></div>
-    <div class="main"><span>Líquido a receber</span><b>${brl(sum(ap,"liq"))}</b></div>
-    <div><span>Aguardando pagamento</span><b>${brl(sum(pend,"bruto"))}</b></div>
-    <div class="neg"><span>Reembolsos e chargebacks</span><b>− ${brl(sum(dev,"bruto"))}</b></div>`;
+    <div><span>Bruto aprovado</span><b>${brl(soma(ap,"valor_bruto"))}</b></div>
+    <div class="neg"><span>Taxas das plataformas</span><b>− ${brl(soma(ap,"taxa_plataforma"))}</b></div>
+    <div class="main"><span>Líquido a receber</span><b>${brl(soma(ap,"valor_liquido"))}</b></div>
+    <div><span>Aguardando pagamento</span><b>${brl(soma(pend,"valor_bruto"))}</b></div>
+    <div class="neg"><span>Reembolsos, chargebacks e disputas</span><b>− ${brl(soma(dev,"valor_bruto"))}</b></div>`;
+
+  $("count").textContent = `${list.length} venda${list.length===1?"":"s"}${vendas.length>=1000?" · mostrando as 1.000 mais recentes":""}`;
+  const emp=$("empty");
+  emp.hidden = list.length>0;
+  emp.textContent = vendas.length ? "Nenhuma venda com esses filtros." : "Nenhuma venda recebida ainda. Elas aparecem aqui assim que as plataformas enviarem.";
+  if (selId && !list.some(v=>v.id===selId)) selId=null;
+  if (!selId && list[0]) selId=list[0].id;
+
+  $("rows").innerHTML = list.map(v=>`
+    <tr class="clic ${v.id===selId?"sel":""}" data-id="${v.id}" tabindex="0">
+      <td>${dt(v.data_venda)}</td>
+      <td>${esc(PLAT[v.plataforma]||v.plataforma)}</td>
+      <td class="id">${esc(v.id_transacao)}</td>
+      <td class="trunc" title="${esc(v.produto_nome)}">${esc(v.produto_nome)}</td>
+      <td class="trunc" title="${esc(v.comprador_nome)}">${esc(v.comprador_nome)}</td>
+      <td>${esc(PAGTO[v.forma_pagamento]||"—")}${v.parcelas>1?` ${v.parcelas}x`:""}</td>
+      <td class="num">${brl(v.valor_bruto)}</td>
+      <td class="num">${brl(v.taxa_plataforma)}</td>
+      <td class="num"><b>${brl(v.valor_liquido)}</b></td>
+      <td>${pill(STATUS,v.status)}</td>
+      <td>${pill(ENDERECO,v.origem_endereco)}</td>
+      <td>${pill(NF,v.status_nf)}</td>
+    </tr>`).join("");
+  renderDetalhe();
 }
 
-function renderRows(list){
-  $("count").textContent = `${list.length} de ${vendas.length} vendas · clique numa linha para ver o evento original`;
-  $("empty").hidden = list.length>0;
-  $("rows").innerHTML = list.map(v=>{
-    const [sl,sc]=STATUS_LABEL[v.status], [nl,nc]=NF_LABEL[v.nf];
-    return `<tr data-id="${v.id}" tabindex="0" class="${v.id===selId?"sel":""}">
-      <td>${dt(v.data)}</td>
-      <td><span class="plat"><i>${v.plat[0]}</i>${v.plat}</span></td>
-      <td class="id">${v.id}</td>
-      <td class="prod" title="${esc(v.prod)}">${esc(v.prod)}</td>
-      <td>${esc(v.cli)}</td>
-      <td>${v.pg}${v.parcelas>1?` ${v.parcelas}x`:""}</td>
-      <td class="num">${brl(v.bruto)}</td>
-      <td class="num">${brl(v.taxa)}</td>
-      <td class="num"><b>${brl(v.liq)}</b></td>
-      <td><span class="pill ${sc}">${sl}</span></td>
-      <td>${EMPRESAS[v.emp].replace(" (exemplo)","")}</td>
-      <td><span class="pill ${nc}">${nl}</span></td>
-    </tr>`;
-  }).join("");
-}
-
-function rawPayload(v){
-  const st = RAW_STATUS[v.plat][v.status];
-  const iso = v.data.toISOString();
-  if (v.plat==="Hotmart") return {event:st,creation_date:v.data.getTime(),data:{product:{name:v.prod},buyer:{name:v.cli,email:"comprador@exemplo.com"},purchase:{transaction:v.id,status:st.replace("PURCHASE_",""),price:{value:v.bruto,currency_value:"BRL"},payment:{type:{Pix:"PIX",Cartão:"CREDIT_CARD",Boleto:"BILLET"}[v.pg],installments_number:v.parcelas}}}};
-  if (v.plat==="Ticto") return {status:st,order:{hash:v.id,paid_amount:Math.round(v.bruto*100),installments:v.parcelas,payment_method:{Pix:"pix",Cartão:"credit_card",Boleto:"bank_slip"}[v.pg],created_at:iso},item:{product_name:v.prod},customer:{name:v.cli,email:"comprador@exemplo.com"}};
-  return {event:"transaction."+st,transaction:{id:v.id,status:st,amount:v.bruto,net_amount:v.liq,method:{Pix:"pix",Cartão:"credit_card",Boleto:"boleto"}[v.pg],installments:v.parcelas,created_at:iso},product:{name:v.prod},client:{full_name:v.cli,email:"comprador@exemplo.com"}};
-}
-
-function normalized(v){
-  return {plataforma:v.plat.toLowerCase(),id_transacao:v.id,data_venda:v.data.toISOString(),empresa_id:v.emp+1,produto:v.prod,comprador:v.cli,forma_pagamento:v.pg.toLowerCase(),parcelas:v.parcelas,valor_bruto:v.bruto,taxa_plataforma:v.taxa,valor_liquido:v.liq,status:v.status,status_nf:v.nf};
-}
-
-function renderDetail(){
-  const v = vendas.find(x=>x.id===selId);
-  if (!v){ $("d-id").textContent=""; $("detail").innerHTML=`<p class="note">Selecione uma venda na tabela para ver os valores, a regra aplicada e o evento que a plataforma enviou.</p>`; return; }
-  $("d-id").textContent = v.id;
-  const [sl,sc]=STATUS_LABEL[v.status];
-  const st = RAW_STATUS[v.plat][v.status];
-  const json = JSON.stringify(rawTab==="raw"?rawPayload(v):normalized(v),null,2);
+async function renderDetalhe(){
+  const v=vendas.find(x=>x.id===selId);
+  if(!v){ $("d-id").textContent=""; $("detail").innerHTML=`<p class="note">Selecione uma venda para ver os detalhes.</p>`; return; }
+  $("d-id").textContent=v.id_transacao;
+  const empresa=empresas.find(e=>e.id===v.empresa_id);
+  const end=[v.logradouro, v.numero, v.complemento, v.bairro].filter(Boolean).join(", ");
+  const com=Array.isArray(v.comissoes)? v.comissoes.map(c=>`<dt>${esc(({MARKETPLACE:"Taxa plataforma",PRODUCER:"Produtor",CO_PRODUCER:"Coprodutor",AFFILIATE:"Afiliado"})[c.source]||c.source)}</dt><dd>${brl(c.value)}</dd>`).join("") : "";
   $("detail").innerHTML = `
     <dl>
-      <dt>Produto</dt><dd>${esc(v.prod)}</dd>
-      <dt>Empresa emissora</dt><dd>${EMPRESAS[v.emp]}</dd>
-      <dt>Status</dt><dd><span class="pill ${sc}">${sl}</span></dd>
-      <dt>Valor bruto</dt><dd>${brl(v.bruto)}</dd>
-      <dt>Taxa ${v.plat}</dt><dd>− ${brl(v.taxa)}</dd>
-      <dt><b>Líquido</b></dt><dd><b>${brl(v.liq)}</b></dd>
+      <dt>Produto</dt><dd>${esc(v.produto_nome)}</dd>
+      <dt>Empresa emissora</dt><dd>${empresa?esc(empresa.nome):'<span class="pill p-warn">Não definida</span>'}</dd>
+      <dt>Status</dt><dd>${pill(STATUS,v.status)}</dd>
+      <dt>Último evento</dt><dd>${esc(v.ultimo_evento||"—")}<br><small class="note">${dt(v.ultimo_evento_em)}</small></dd>
     </dl>
-    <div>
-      <div class="sec-title">Tradução do status</div>
-      <div class="map"><div><code>${st}</code><span class="arrow">→</span><code>${v.status}</code></div></div>
+    <div><div class="sec-title">Valores</div><dl>
+      <dt>Valor pago</dt><dd>${brl(v.valor_bruto)}</dd>
+      ${v.valor_oferta!=null && Number(v.valor_oferta)!==Number(v.valor_bruto)?`<dt>Preço da oferta</dt><dd>${brl(v.valor_oferta)}</dd>`:""}
+      ${com || `<dt>Taxa</dt><dd>${brl(v.taxa_plataforma)}</dd><dt>Líquido</dt><dd>${brl(v.valor_liquido)}</dd>`}
+      ${v.tem_coproducao?`<dt>Coprodução</dt><dd><span class="pill p-info">Sim</span></dd>`:""}
+    </dl></div>
+    <div><div class="sec-title">Comprador</div><dl>
+      <dt>Nome</dt><dd>${esc(v.comprador_nome||"—")}</dd>
+      <dt>${esc(v.comprador_documento_tipo||"Documento")}</dt><dd>${esc(doc(v.comprador_documento))}</dd>
+      <dt>E-mail</dt><dd>${esc(v.comprador_email||"—")}</dd>
+      <dt>Telefone</dt><dd>${esc(v.comprador_telefone||"—")}</dd>
+    </dl></div>
+    <div><div class="sec-title">Endereço para a nota · ${pill(ENDERECO,v.origem_endereco)}</div>
+      ${v.origem_endereco==="pendente" ? `<p class="note">Sem endereço no checkout e sem telefone para buscar o padrão do DDD. Precisa ser preenchido antes de emitir a nota.</p>` :
+      `<dl><dt>Endereço</dt><dd>${esc(end||"—")}</dd><dt>Cidade</dt><dd>${esc(v.cidade||"—")}${v.uf?" / "+esc(v.uf):""}</dd>
+       <dt>CEP</dt><dd>${esc(String(v.cep||"—").replace(/^(\d{5})(\d{3})$/,"$1-$2"))}</dd><dt>Código IBGE</dt><dd>${esc(v.cod_ibge||"—")}</dd></dl>`}
     </div>
-    <div>
-      <div class="sec-title">Regra de empresa</div>
-      <p class="note" style="margin:0">Produto “${esc(v.prod)}” está cadastrado para ${EMPRESAS[v.emp]}. Vendas aprovadas desse produto geram NF por essa empresa.</p>
-    </div>
-    <div>
-      <div class="panel-head" style="padding:0 0 8px;border:0">
-        <div class="sec-title" style="margin:0">Evento</div>
-        <div class="tabs">
-          <button id="t-raw" aria-pressed="${rawTab==="raw"}">Recebido</button>
-          <button id="t-norm" aria-pressed="${rawTab==="norm"}">Normalizado</button>
-        </div>
-      </div>
-      <pre>${esc(json)}</pre>
-    </div>`;
-  $("t-raw").onclick=()=>{rawTab="raw";renderDetail()};
-  $("t-norm").onclick=()=>{rawTab="norm";renderDetail()};
+    <div><div class="sec-title">Evento recebido</div><pre id="raw">Carregando…</pre></div>`;
+  if(!v.evento_id){ $("raw").textContent="—"; return; }
+  const { data } = await sb.from("eventos_webhook").select("payload").eq("id",v.evento_id).single();
+  if (selId!==v.id || !$("raw")) return;
+  const p = data ? JSON.parse(JSON.stringify(data.payload)) : null;
+  if (p && p.hottok) p.hottok="(oculto)";
+  $("raw").textContent = p ? JSON.stringify(p,null,2) : "Não encontrado";
 }
+$("rows").addEventListener("click",e=>{const tr=e.target.closest("tr"); if(tr){selId=Number(tr.dataset.id); renderVendas();}});
+$("rows").addEventListener("keydown",e=>{if(e.key==="Enter"){const tr=e.target.closest("tr"); if(tr){selId=Number(tr.dataset.id); renderVendas(); document.querySelector(`#rows tr[data-id="${selId}"]`)?.focus();}}});
+["f-emp","f-plat","f-status","f-periodo"].forEach(id=>$(id).addEventListener("change",renderVendas));
+$("f-q").addEventListener("input",renderVendas);
 
-function render(){
-  const list = filtered();
-  if (selId && !list.some(v=>v.id===selId)) selId = list[0]?.id ?? null;
-  renderTotals(list); renderRows(list); renderDetail();
+/* ---------- produtos ---------- */
+function renderProdutos(){
+  const cont={}; vendas.forEach(v=>{ if(v.produto_id) cont[v.produto_id]=(cont[v.produto_id]||0)+1; });
+  $("count-prod").textContent = `${produtos.length} produto${produtos.length===1?"":"s"}`;
+  $("empty-prod").hidden = produtos.length>0;
+  const lista=[...produtos].sort((a,b)=>(a.empresa_id==null?0:1)-(b.empresa_id==null?0:1) || a.nome.localeCompare(b.nome));
+  $("rows-prod").innerHTML = lista.map(p=>`
+    <tr>
+      <td>${esc(PLAT[p.plataforma]||p.plataforma)}</td>
+      <td class="id">${esc(p.produto_id_plataforma)}</td>
+      <td class="trunc" title="${esc(p.nome)}">${esc(p.nome)}</td>
+      <td class="num">${cont[p.id]||0}</td>
+      <td><select data-prod="${p.id}" aria-label="Empresa do produto ${esc(p.nome)}">
+        <option value="">— Escolha a empresa —</option>
+        ${empresas.map(e=>`<option value="${e.id}" ${e.id===p.empresa_id?"selected":""}>${esc(e.nome)}</option>`).join("")}
+      </select></td>
+    </tr>`).join("");
 }
+$("rows-prod").addEventListener("change", async e=>{
+  const sel=e.target.closest("select[data-prod]"); if(!sel) return;
+  sel.disabled=true;
+  const id=Number(sel.dataset.prod), emp=sel.value?Number(sel.value):null;
+  const { error } = await sb.from("produtos").update({empresa_id:emp}).eq("id",id);
+  sel.disabled=false;
+  if (error){ toast("Não foi possível salvar: "+error.message); return; }
+  toast("Empresa do produto salva");
+  await carregarTudo(false);
+});
 
-$("rows").addEventListener("click",e=>{const tr=e.target.closest("tr"); if(tr){selId=tr.dataset.id; render();}});
-$("rows").addEventListener("keydown",e=>{if(e.key==="Enter"){const tr=e.target.closest("tr"); if(tr){selId=tr.dataset.id; render(); document.querySelector(`tr[data-id="${selId}"]`)?.focus();}}});
-["f-emp","f-plat","f-status"].forEach(id=>$(id).addEventListener("change",render));
-$("f-q").addEventListener("input",render);
+/* ---------- abas ---------- */
+function abrirAba(qual){
+  const v = qual==="vendas";
+  $("tab-vendas").setAttribute("aria-selected", v); $("tab-produtos").setAttribute("aria-selected", !v);
+  $("aba-vendas").hidden=!v; $("aba-produtos").hidden=v;
+  $("aba-produtos").style.display = v ? "" : "flex";
+}
+$("tab-vendas").onclick=()=>abrirAba("vendas");
+$("tab-produtos").onclick=()=>abrirAba("produtos");
 
-selId = vendas[0].id;
-renderSources(); render();
+iniciar();
 </script>
-
 </body>
 </html>
