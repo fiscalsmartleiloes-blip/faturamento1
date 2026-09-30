@@ -253,6 +253,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
   <label class="side-field">Empresa<select id="f-emp"></select></label>
   <nav class="side-nav" aria-label="Menu">
     <button type="button" data-aba="vendas" aria-current="page">Vendas</button>
+    <button type="button" data-aba="alunos" aria-current="false">Alunos</button>
     <button type="button" data-aba="faturamento" aria-current="false">Faturamento<span class="badge" id="badge-fat" hidden></span></button>
     <button type="button" data-aba="emitidas" aria-current="false">Notas emitidas<span class="badge" id="badge-emit" hidden></span></button>
     <button type="button" data-aba="importar" aria-current="false">Importar vendas</button>
@@ -263,6 +264,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
     <button type="button" class="sub" data-aba="config" data-sub="coprodutores" aria-current="false">Coprodutores externos</button>
     <button type="button" class="sub" data-aba="config" data-sub="regras" aria-current="false">Regras de recebimento</button>
     <button type="button" class="sub" data-aba="config" data-sub="categorias" aria-current="false">Categorias</button>
+    <button type="button" class="sub" data-aba="config" data-sub="fidelidade" aria-current="false">Níveis de fidelidade</button>
     <div class="side-group so-master" hidden>Acessos</div>
     <button type="button" class="sub so-master" data-aba="config" data-sub="usuarios" aria-current="false" hidden>Usuários e acessos</button>
     <button type="button" class="sub so-master" data-aba="config" data-sub="setores" aria-current="false" hidden>Setores e permissões</button>
@@ -312,6 +314,25 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
         <div class="empty" id="empty" hidden></div>
       </div>
     </div>
+  </section>
+
+  <!-- ================= ALUNOS ================= -->
+  <section id="aba-alunos" class="stack" hidden>
+    <div class="controls">
+      <input type="search" id="al-q" placeholder="Buscar aluno por nome, CPF ou e-mail" aria-label="Buscar aluno">
+      <select id="al-nivel" aria-label="Nível"></select>
+      <select id="al-plat" aria-label="Plataforma"><option value="">Todas as plataformas</option><option value="hotmart">Hotmart</option><option value="asaas">Asaas</option><option value="ticto">Ticto</option><option value="assiny">Assiny</option><option value="manual">Manual</option></select>
+      <select id="al-ordem" aria-label="Ordenar"><option value="total">Maior investimento</option><option value="pontos">Maior fidelidade</option><option value="recente">Compra mais recente</option><option value="nome">Nome</option></select>
+    </div>
+    <section class="totals t4" id="al-totals"></section>
+    <section class="ledger">
+      <div class="panel">
+        <div class="panel-head"><h2>Alunos</h2><small id="al-count"></small></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>CPF/CNPJ</th><th>Plataformas</th><th class="num">Compras</th><th class="num">Total investido</th><th class="num">Em aberto</th><th>Última compra</th><th>Nível</th></tr></thead>
+        <tbody id="al-rows"></tbody></table><div class="empty" id="al-empty" hidden>Nenhum aluno encontrado.</div></div>
+      </div>
+      <aside class="panel detail"><div class="panel-head"><h2>Cadastro do aluno</h2><small id="al-d-id"></small></div><div class="panel-body" id="al-detail"><p class="note">Selecione um aluno.</p></div></aside>
+    </section>
   </section>
 
   <!-- ================= FATURAMENTO ================= -->
@@ -445,7 +466,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
     <!-- produtos e split -->
     <section id="sub-produtos" class="cfg">
       <div class="panel">
-        <div class="panel-head"><h2>Empresas e produtos</h2>
+        <div class="panel-head"><h2>Empresas e produtos</h2><button type="button" class="btn" id="cp-novo">+ Novo produto</button>
           <select id="cp-filtro" aria-label="Filtrar produtos"><option value="">Todas as empresas</option><option value="sem">Sem empresa</option><option value="emp">Só a empresa selecionada no menu</option></select>
           <input type="search" id="cp-busca" placeholder="Buscar produto" aria-label="Buscar produto" style="width:100%">
         </div>
@@ -497,6 +518,23 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
     <section id="sub-categorias" class="panel" hidden>
       <div class="panel-head"><h2>Categorias (plano de contas)</h2><small>Renomeie, desative ou adicione. Categorias desativadas deixam de aparecer nas listas.</small></div>
       <div class="panel-body"><div class="cat-cols" id="cat-cols"></div></div>
+    </section>
+
+    <!-- fidelidade -->
+    <section id="sub-fidelidade" class="stack" hidden>
+      <div class="panel">
+        <div class="panel-head"><h2>Níveis</h2><small>O aluno está no maior nível cuja pontuação mínima ele alcançou. A pontuação é a soma das porcentagens dos produtos que ele comprou (compras aprovadas).</small></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Nível</th><th class="num">A partir de (%)</th><th>Cor</th><th></th></tr></thead><tbody id="fi-niveis"></tbody></table></div>
+        <form class="panel-body" id="fi-novo" style="flex-direction:row;flex-wrap:wrap;align-items:flex-end">
+          <label class="field">Novo nível<input id="fi-nome" required></label>
+          <label class="field">A partir de (%)<input type="number" step="any" id="fi-min" required></label>
+          <button class="btn primary" type="submit">Adicionar nível</button>
+        </form>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Porcentagem de cada produto</h2><input type="search" id="fi-busca" placeholder="Buscar produto" aria-label="Buscar produto"></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Produto</th><th>Empresa</th><th>Plataforma</th><th class="num">% de fidelidade</th></tr></thead><tbody id="fi-prods"></tbody></table></div>
+      </div>
     </section>
 
     <!-- usuários -->
@@ -563,6 +601,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 
 const PLAT = {hotmart:"Hotmart", asaas:"Asaas", ticto:"Ticto", assiny:"Assiny"};
+const PLAT_TODAS = {...PLAT, manual:"Manual"};
 const STATUS = {aprovada:["Aprovada","p-ok"], aguardando:["Aguardando pgto","p-warn"], em_disputa:["Em disputa","p-bad"],
   reembolsada:["Reembolsada","p-mute"], chargeback:["Chargeback","p-bad"], cancelada:["Cancelada","p-mute"]};
 const NF_VENDA = {nao_se_aplica:["—","p-mute"], na_fila:["Na fila","p-info"], emitida:["Emitida","p-ok"], cancelar:["Cancelar NF","p-bad"], cancelada:["Cancelada","p-mute"]};
@@ -607,7 +646,7 @@ async function iniciar(){
 function mostrarLogin(){ PERFIL=null; $("tela-senha").hidden=true; $("tela-app").hidden=true; $("tela-login").hidden=false; clearInterval(timer); $("email").focus(); }
 let PERFIL=null, PERM={};
 const TELAS=[["vendas","Vendas"],["faturamento","Faturamento"],["emitidas","Notas emitidas"],["importar","Importar vendas"],["fluxo","Fluxo de recebimento"],
-  ["config_produtos","Produtos e split"],["config_empresas","Empresas e tributação"],["config_coprodutores","Coprodutores externos"],["config_regras","Regras de recebimento"],["config_categorias","Categorias"]];
+  ["config_produtos","Produtos e split"],["config_empresas","Empresas e tributação"],["config_coprodutores","Coprodutores externos"],["config_regras","Regras de recebimento"],["config_categorias","Categorias"],["alunos","Alunos"],["config_fidelidade","Níveis de fidelidade"]];
 const telaDe = (aba, sub) => aba==="config" ? "config_"+sub : aba;
 const podeVer = t => PERFIL && (PERFIL.master || ["ver","editar"].includes(PERM[t]));
 const podeEditar = t => PERFIL && (PERFIL.master || PERM[t]==="editar");
@@ -671,6 +710,8 @@ async function carregarTudo(primeiraVez){
   if (erro){ if (/JWT|auth/i.test(erro.error.message)) { await sb.auth.signOut(); return; } toast("Erro ao carregar: "+erro.error.message); return; }
   [S.empresas,S.produtos,S.vendas,S.cats,S.coprod,S.regras,S.splits,S.receb,S.fat,S.ext] = q.map(r=>r.data);
   const st = await sb.from("setores").select("*").order("nome"); S.setores = st.data||[];
+  const nv = await sb.from("niveis_fidelidade").select("*").order("pontos_min"); S.niveis = nv.data||[];
+  const al = podeVer("alunos") ? await sb.from("alunos").select("*") : {data:[]}; S.alunosCad = al.data||[];
   if (PERFIL && PERFIL.master){ const pf = await sb.from("perfis").select("*").order("nome"); S.perfis = pf.data||[]; }
 
   await Promise.all(Object.keys(PLAT).map(async pl=>{
@@ -694,6 +735,7 @@ function renderTudo(){
   if (abaAtual==="fluxo") renderFluxo();
   if (abaAtual==="faturamento") renderFat();
   if (abaAtual==="emitidas") renderEmit();
+  if (abaAtual==="alunos") renderAlunos();
   const semVinc=(S.ext||[]).filter(x=>!x.venda_id && !/cancel|rejeit|denegad/i.test(x.status_notazz||"") && passaEmpresaExt(x)).length;
   $("badge-emit").hidden=!semVinc; $("badge-emit").textContent=semVinc;
   const prontas=(S.fat||[]).filter(n=>["pronta","aguardando_autorizacao","erro"].includes(n.situacao) && passaEmpresaFat(n)).length;
@@ -705,12 +747,12 @@ $("f-emp").addEventListener("change", renderTudo);
 /* ---------------- menu lateral ---------------- */
 const TITULOS = {vendas:["Contas a receber","Captação de vendas"], faturamento:["Notas fiscais","Faturamento"], emitidas:["Notas fiscais","Notas emitidas na Notazz"], importar:["Contas a receber","Importar vendas antigas"], fluxo:["Contas a receber","Fluxo de recebimento"],
   produtos:["Configuração","Produtos e split por empresa"], empresas:["Configuração","Empresas e tributação"], coprodutores:["Configuração","Coprodutores externos"],
-  regras:["Configuração","Regras de recebimento"], categorias:["Configuração","Categorias"], usuarios:["Acessos","Usuários e acessos"], setores:["Acessos","Setores e permissões"]};
+  regras:["Configuração","Regras de recebimento"], categorias:["Configuração","Categorias"], fidelidade:["Configuração","Níveis de fidelidade"], alunos:["Cadastros","Alunos"], usuarios:["Acessos","Usuários e acessos"], setores:["Acessos","Setores e permissões"]};
 document.querySelectorAll(".side-nav [data-aba]").forEach(b=>b.onclick=()=>{ if(b.dataset.sub) subAtual=b.dataset.sub; abrirAba(b.dataset.aba); });
 function abrirAba(a){
   abaAtual=a; editando=null;
-  ["vendas","faturamento","emitidas","importar","fluxo","config"].forEach(x=>$("aba-"+x).hidden = x!==a);
-  ["produtos","empresas","coprodutores","regras","categorias","usuarios","setores"].forEach(x=>$("sub-"+x).hidden = x!==subAtual);
+  ["vendas","alunos","faturamento","emitidas","importar","fluxo","config"].forEach(x=>$("aba-"+x).hidden = x!==a);
+  ["produtos","empresas","coprodutores","regras","categorias","fidelidade","usuarios","setores"].forEach(x=>$("sub-"+x).hidden = x!==subAtual);
   document.querySelectorAll(".side-nav [data-aba]").forEach(b=>b.setAttribute("aria-current",
     (b.dataset.aba===a && (!b.dataset.sub || b.dataset.sub===subAtual)) ? "page" : "false"));
   const [ey,ti] = TITULOS[a==="config"?subAtual:a];
@@ -788,7 +830,7 @@ function renderVendas(){
   $("empty").textContent = S.vendas.length ? "Nenhuma venda com esses filtros." : "Nenhuma venda recebida ainda. Elas aparecem aqui assim que as plataformas enviarem.";
   $("rows").innerHTML = list.map(v=>`
     <tr class="clic ${v.id===selVenda?"sel":""}" data-id="${v.id}" tabindex="0" title="Abrir lançamento">
-      <td>${dt(v.data_venda)}</td><td>${esc(PLAT[v.plataforma]||v.plataforma)}</td><td class="id">${esc(v.id_transacao)}</td>
+      <td>${dt(v.data_venda)}</td><td>${esc(PLAT_TODAS[v.plataforma]||v.plataforma)}</td><td class="id">${esc(v.id_transacao)}</td>
       <td class="trunc" title="${esc(v.produto_nome)}">${esc(v.produto_nome)}</td><td class="trunc" title="${esc(v.comprador_nome)}">${esc(v.comprador_nome)}</td>
       <td>${v.tipo==="contrato" ? resumoContrato(v) : esc(PAGTO[v.forma_pagamento]||"—")+(v.parcela_num?` · parc. ${v.parcela_num}${v.parcela_total?"/"+v.parcela_total:""}`:(v.parcelas>1?` ${v.parcelas}x`:""))}</td>
       <td class="num">${brl(v.valor_bruto)}</td><td class="num">${brl(v.taxa_plataforma)}</td><td class="num"><b>${brl(v.valor_liquido)}</b></td>
@@ -846,7 +888,7 @@ function blocoVincular(v, titulo){
 function abrirLancamento(id){
   const v=S.vendas.find(x=>x.id===id); if(!v) return;
   selVenda=id; editando=id;
-  $("lanc-eyebrow").textContent = `${v.tipo==="contrato"?"Contrato · ":v.tipo==="parcela"?"Parcela de contrato · ":""}${PLAT[v.plataforma]||v.plataforma} · ${v.id_transacao}`;
+  $("lanc-eyebrow").textContent = `${v.tipo==="contrato"?"Contrato · ":v.tipo==="parcela"?"Parcela de contrato · ":""}${PLAT_TODAS[v.plataforma]||v.plataforma} · ${v.id_transacao}`;
   $("lanc-titulo").textContent = v.comprador_nome || "Lançamento";
   $("lanc-status").innerHTML = pill(STATUS,v.status)+" "+pill(ENDERECO,v.origem_endereco);
   $("lanc-edit-info").textContent = v.editado_em ? `Última edição por ${v.editado_por||"—"} em ${dt(v.editado_em)}` : "Ainda não editada";
@@ -861,7 +903,7 @@ function abrirLancamento(id){
     <fieldset><legend>Venda</legend><div class="form-grid">
       <label class="field">Data da venda<input type="datetime-local" name="data_venda" value="${paraLocal(v.data_venda)}" required></label>
       <label class="field">Status<select name="status">${Object.entries(STATUS).map(([k,[t]])=>`<option value="${k}" ${k===v.status?"selected":""}>${t}</option>`).join("")}</select></label>
-      <label class="field full">Produto${v.tipo==="parcela"?" (segue o contrato)":""}<select name="produto_id" ${v.tipo==="parcela"?"disabled":""}>${prods.map(p=>`<option value="${p.id}" ${p.id===v.produto_id?"selected":""}>${esc(p.nome)} · ${esc(PLAT[p.plataforma]||p.plataforma)}${p.empresa_id?" · "+esc(nomeEmpresa(p.empresa_id)):""}</option>`).join("")}</select></label>
+      <label class="field full">Produto${v.tipo==="parcela"?" (segue o contrato)":""}<select name="produto_id" ${v.tipo==="parcela"?"disabled":""}>${prods.map(p=>`<option value="${p.id}" ${p.id===v.produto_id?"selected":""}>${esc(p.nome)} · ${esc(PLAT_TODAS[p.plataforma]||p.plataforma)}${p.empresa_id?" · "+esc(nomeEmpresa(p.empresa_id)):""}</option>`).join("")}</select></label>
       <label class="field">Forma de pagamento<select name="forma_pagamento">${["pix","cartao","boleto","outro"].map(k=>`<option value="${k}" ${k===v.forma_pagamento?"selected":""}>${PAGTO[k]}</option>`).join("")}</select></label>
       <label class="field">Parcelas<input type="number" min="1" step="1" name="parcelas" value="${v.parcelas??1}"></label>
       ${num("valor_bruto","Valor pago (bruto)")}${num("taxa_plataforma","Taxa da plataforma")}${num("valor_liquido","Valor líquido")}
@@ -1764,6 +1806,7 @@ function renderConfig(){
   if (subAtual==="regras") renderCfgRegras();
   if (subAtual==="categorias") renderCfgCategorias();
   if (subAtual==="usuarios") renderUsuarios();
+  if (subAtual==="fidelidade") renderFidelidade();
   if (subAtual==="setores") renderSetores();
 }
 
@@ -1779,7 +1822,7 @@ function renderCfgProdutos(){
     .filter(g=> f==="sem" ? g.id==null : f==="emp" ? (e && e!=="sem" ? String(g.id)===e : g.id==null) : true);
   const item=p=>{ const nsplit=S.splits.filter(s=>s.produto_id===p.id).length, n=cont[p.id]||0;
     return `<div class="prow"><input type="checkbox" data-psel="${p.id}" ${prodSel.has(p.id)?"checked":""} aria-label="Selecionar ${esc(p.nome)}"><button type="button" data-p="${p.id}" aria-current="${p.id===selProduto}"><span>${esc(p.nome)}</span>
-      <small>${esc(PLAT[p.plataforma]||p.plataforma)} · ${n} venda${n===1?"":"s"}${variacoes[p.id]?` · ${variacoes[p.id]} variação${variacoes[p.id]===1?"":"ões"} junta${variacoes[p.id]===1?"":"s"}`:""} · ${nsplit?"split configurado":'<span class="pill p-warn">Sem split</span>'}</small></button></div>`; };
+      <small>${esc(PLAT_TODAS[p.plataforma]||p.plataforma)} · ${n} venda${n===1?"":"s"}${variacoes[p.id]?` · ${variacoes[p.id]} variação${variacoes[p.id]===1?"":"ões"} junta${variacoes[p.id]===1?"":"s"}`:""} · ${nsplit?"split configurado":'<span class="pill p-warn">Sem split</span>'}</small></button></div>`; };
   let html="";
   grupos.forEach(g=>{
     const lista=visiveis.filter(p=>(p.empresa_id??null)===g.id).sort((a,b)=>a.nome.localeCompare(b.nome));
@@ -1788,7 +1831,7 @@ function renderCfgProdutos(){
   });
   const sel=[...prodSel].map(id=>S.produtos.find(p=>p.id===id)).filter(Boolean);
   const loteHtml = sel.length ? `<div class="lote-prod"><b>${sel.length} produto${sel.length===1?"":"s"} selecionado${sel.length===1?"":"s"}</b>
-    <select id="lote-dest" aria-label="Produto de destino"><option value="">— Produto que fica (destino) —</option>${S.produtos.filter(p=>!p.agrupado_em && !prodSel.has(p.id)).sort((a,b)=>a.nome.localeCompare(b.nome)).map(p=>`<option value="${p.id}">${esc(p.nome)} · ${esc(PLAT[p.plataforma]||p.plataforma)}${p.empresa_id?" · "+esc(nomeEmpresa(p.empresa_id)):""}</option>`).join("")}</select>
+    <select id="lote-dest" aria-label="Produto de destino"><option value="">— Produto que fica (destino) —</option>${S.produtos.filter(p=>!p.agrupado_em && !prodSel.has(p.id)).sort((a,b)=>a.nome.localeCompare(b.nome)).map(p=>`<option value="${p.id}">${esc(p.nome)} · ${esc(PLAT_TODAS[p.plataforma]||p.plataforma)}${p.empresa_id?" · "+esc(nomeEmpresa(p.empresa_id)):""}</option>`).join("")}</select>
     <div class="controls"><button type="button" class="btn primary" id="lote-juntar">Juntar no destino</button><button type="button" class="btn danger" id="lote-excluir">Excluir selecionados</button><button type="button" class="btn link" id="lote-limpar">Limpar seleção</button></div>
     <small class="note">Excluir: produtos sem vendas são apagados. Os que têm vendas precisam de um destino, e as vendas vão para ele.</small></div>` : "";
   $("cp-lista").innerHTML = loteHtml + (html || `<div class="empty">Nenhum produto neste filtro. Os produtos aparecem sozinhos na primeira venda ou importação.</div>`);
@@ -1819,7 +1862,7 @@ let simValor=1000;
 function renderEditorProduto(){
   const p=S.produtos.find(x=>x.id===selProduto);
   if(!p){ $("cp-titulo").textContent="Selecione um produto"; $("cp-sub").textContent=""; $("cp-editor").innerHTML=`<p class="note">Escolha um produto na lista para definir a empresa emissora, as categorias e a divisão fiscal.</p>`; return; }
-  $("cp-titulo").textContent=p.nome; $("cp-sub").textContent=`${PLAT[p.plataforma]||p.plataforma} · código ${String(p.produto_id_plataforma).replace(/^nome:/,"(pelo nome) ")}`;
+  $("cp-titulo").textContent=p.nome; $("cp-sub").textContent=`${PLAT_TODAS[p.plataforma]||p.plataforma} · código ${String(p.produto_id_plataforma).replace(/^nome:/,"(pelo nome) ")}`;
   const juntos=S.produtos.filter(x=>x.agrupado_em===p.id);
   const outros=S.produtos.filter(x=>x.id!==p.id && !x.agrupado_em).sort((a,b)=>a.nome.localeCompare(b.nome));
   const linhas=et=>S.splits.filter(s=>s.produto_id===p.id && s.etapa===et).sort((a,b)=>a.ordem-b.ordem||a.id-b.id);
@@ -1842,6 +1885,7 @@ function renderEditorProduto(){
       <label class="field">Empresa emissora<select id="pe-emp">${optEmp(p.empresa_id)}</select></label>
       <label class="field">Categoria principal<select id="pe-cat">${optCats("categoria",p.categoria_id)}</select></label>
       <label class="field">Subcategoria<select id="pe-sub">${optCats("subcategoria",p.subcategoria_id)}</select></label>
+      <label class="field">% de fidelidade<input type="number" step="any" min="0" id="pe-pontos" value="${Number(p.pontos_fidelidade||0)}"></label>
     </div>
     <fieldset class="split-sec"><legend>1. Coprodutores externos</legend>
       <header><p class="note">Percentual sobre o <b>valor bruto</b>. Sai antes da divisão e não gera nota por vocês.</p>
@@ -1861,13 +1905,13 @@ function renderEditorProduto(){
     </fieldset>
     <fieldset><legend>Variações do mesmo produto</legend>
       <p class="note">Junte aqui os nomes diferentes que são o mesmo produto (por exemplo "Renovação Tubarões" e "RENOVAÇÃO PROGRAMA TUBARÕES"). As vendas passam para este produto e usam este split, inclusive as que chegarem depois.</p>
-      ${juntos.length ? juntos.map(x=>`<div class="merge-row"><span>${esc(x.nome)} <small class="note">(${esc(PLAT[x.plataforma]||x.plataforma)})</small></span><button type="button" class="btn link" data-separar="${x.id}">Separar</button></div>`).join("") : `<p class="note">Nenhuma variação junta.</p>`}
-      <div class="merge-row"><select id="pe-juntar" aria-label="Produto para juntar"><option value="">— Escolha um produto para juntar a este —</option>${outros.map(x=>`<option value="${x.id}">${esc(x.nome)} (${esc(PLAT[x.plataforma]||x.plataforma)})</option>`).join("")}</select>
+      ${juntos.length ? juntos.map(x=>`<div class="merge-row"><span>${esc(x.nome)} <small class="note">(${esc(PLAT_TODAS[x.plataforma]||x.plataforma)})</small></span><button type="button" class="btn link" data-separar="${x.id}">Separar</button></div>`).join("") : `<p class="note">Nenhuma variação junta.</p>`}
+      <div class="merge-row"><select id="pe-juntar" aria-label="Produto para juntar"><option value="">— Escolha um produto para juntar a este —</option>${outros.map(x=>`<option value="${x.id}">${esc(x.nome)} (${esc(PLAT_TODAS[x.plataforma]||x.plataforma)})</option>`).join("")}</select>
         <button type="button" class="btn" id="pe-juntar-btn">Juntar a este</button></div>
     </fieldset>
     <fieldset><legend>Excluir este produto</legend>
       <p class="note">Sem vendas, ele é apagado. Com vendas, escolha para qual produto elas vão; ele deixa de aparecer e as vendas futuras com esse nome também vão para o destino.</p>
-      <div class="merge-row"><select id="pe-exc-dest" aria-label="Destino das vendas"><option value="">— Para qual produto vão as vendas —</option>${outros.map(x=>`<option value="${x.id}">${esc(x.nome)} (${esc(PLAT[x.plataforma]||x.plataforma)})</option>`).join("")}</select>
+      <div class="merge-row"><select id="pe-exc-dest" aria-label="Destino das vendas"><option value="">— Para qual produto vão as vendas —</option>${outros.map(x=>`<option value="${x.id}">${esc(x.nome)} (${esc(PLAT_TODAS[x.plataforma]||x.plataforma)})</option>`).join("")}</select>
       <button type="button" class="btn danger" id="pe-excluir">Excluir produto</button></div>
     </fieldset>
     <div class="sim"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1896,6 +1940,7 @@ $("cp-editor").addEventListener("change", async e=>{
     return;
   }
   if (el.id==="pe-juntar" || el.id==="pe-exc-dest") return;
+  if (el.id==="pe-pontos"){ const v=Number(el.value)||0; if (await salvar("produtos", p.id, {pontos_fidelidade:v}, "Porcentagem de fidelidade salva")) p.pontos_fidelidade=v; return; }
   if (el.id==="pe-emp"||el.id==="pe-cat"||el.id==="pe-sub"){
     const campo={ "pe-emp":"empresa_id","pe-cat":"categoria_id","pe-sub":"subcategoria_id"}[el.id];
     const val=el.value?Number(el.value):null;
@@ -2034,7 +2079,7 @@ $("cc-novo").addEventListener("submit", async e=>{
 /* --- regras de recebimento --- */
 function renderCfgRegras(){
   $("cr-rows").innerHTML = S.regras.map(r=>`<tr data-r="${r.id}">
-    <td>${esc(PLAT[r.plataforma]||r.plataforma)}</td><td>${esc(PAGTO[r.forma_pagamento]||r.forma_pagamento)}</td>
+    <td>${esc(PLAT_TODAS[r.plataforma]||r.plataforma)}</td><td>${esc(PAGTO[r.forma_pagamento]||r.forma_pagamento)}</td>
     <td><label class="field check"><input type="checkbox" data-f="recebe_integral" ${r.recebe_integral?"checked":""}>${r.recebe_integral?"Sim, uma parcela só":"Não, uma parcela por mês"}</label></td>
     <td class="num"><input type="number" min="0" step="1" data-f="prazo_dias" value="${r.prazo_dias}" aria-label="Prazo em dias"></td>
     <td><select data-f="tipo_recebimento_id" aria-label="Tipo padrão">${optCats("tipo_recebimento",r.tipo_recebimento_id,"—")}</select></td>
@@ -2079,6 +2124,125 @@ $("cat-cols").addEventListener("submit", async e=>{
   if (error){ toast(/duplicate|unique/i.test(error.message) ? "Essa categoria já existe." : "Não foi possível adicionar: "+error.message); return; }
   S.cats.push(data); renderCfgCategorias(); toast("Categoria adicionada");
 });
+
+/* ================= NOVO PRODUTO ================= */
+$("cp-novo").onclick=async ()=>{
+  const emp = empFiltro() && empFiltro()!=="sem" ? Number(empFiltro()) : null;
+  const { data, error } = await sb.from("produtos").insert({ plataforma:"manual", produto_id_plataforma:"manual:"+Date.now().toString(36), nome:"Novo produto (renomeie)", empresa_id:emp, nome_editado:true }).select().single();
+  if (error){ toast("Não foi possível criar: "+error.message); return; }
+  selProduto=data.id; await carregarTudo(false); toast("Produto criado. Dê um nome e configure o split.");
+  const f=$("pe-nome"); if (f){ f.focus(); f.select(); }
+};
+
+/* ================= ALUNOS ================= */
+const COR_NIVEL={mute:"p-mute",warn:"p-warn",info:"p-info",ok:"p-ok",bad:"p-bad"};
+const nivelDe = pts => { let n=null; (S.niveis||[]).forEach(x=>{ if (pts>=Number(x.pontos_min)) n=x; }); return n; };
+const pillNivel = n => n ? `<span class="pill ${COR_NIVEL[n.cor]||"p-mute"}">${esc(n.nome)}</span>` : "—";
+let selAluno=null;
+function montarAlunos(){
+  const mapa=new Map(), prodPts=new Map((S.produtos||[]).map(p=>[p.id,Number(p.pontos_fidelidade||0)]));
+  const vendas=S.vendas.filter(v=>v.tipo!=="parcela" && passaEmpresa(v.empresa_id));
+  for (const v of vendas){
+    const chave = v.comprador_documento || (v.comprador_email?String(v.comprador_email).toLowerCase():"") || ("nome:"+semAcentoTxt(v.comprador_nome||"sem nome"));
+    let a=mapa.get(chave);
+    if (!a){ a={chave, nome:"", doc:v.comprador_documento||"", email:"", tel:"", cidade:"", uf:"", vendas:[], plats:new Set(), prods:new Set(), total:0, pontos:0, primeira:null, ultima:null, aberto:0}; mapa.set(chave,a); }
+    a.vendas.push(v); a.plats.add(v.plataforma);
+    if (!a.ultima || v.data_venda>a.ultima){ a.ultima=v.data_venda; a.nome=v.comprador_nome||a.nome; a.email=v.comprador_email||a.email; a.tel=v.comprador_telefone||a.tel; a.cidade=v.cidade||a.cidade; a.uf=v.uf||a.uf; }
+    if (!a.primeira || v.data_venda<a.primeira) a.primeira=v.data_venda;
+    if (v.status==="aprovada"){ a.total+=Number(v.valor_bruto||0); a.pontos+=prodPts.get(v.produto_id)||0; if (v.produto_nome) a.prods.add(v.produto_nome); }
+  }
+  const idsPorAluno=new Map(); mapa.forEach(a=>a.vendas.forEach(v=>idsPorAluno.set(v.id,a)));
+  (S.receb||[]).forEach(r=>{ if (r.situacao==="a_vencer"||r.situacao==="vencido"){ const a=idsPorAluno.get(r.venda_id) || idsPorAluno.get(r.contrato_id); if (a) a.aberto+=Number(r.valor_previsto||0); } });
+  const cad=new Map((S.alunosCad||[]).map(c=>[c.chave,c]));
+  mapa.forEach(a=>{ a.cad=cad.get(a.chave)||null; if (a.cad){ a.nome=a.cad.nome||a.nome; a.email=a.cad.email||a.email; a.tel=a.cad.telefone||a.tel; } a.nivel=nivelDe(a.pontos); });
+  return [...mapa.values()];
+}
+function renderAlunos(){
+  const nsel=$("al-nivel").value;
+  $("al-nivel").innerHTML=`<option value="">Todos os níveis</option>${(S.niveis||[]).map(n=>`<option value="${n.id}">${esc(n.nome)}</option>`).join("")}`; $("al-nivel").value=nsel;
+  const q=semAcentoTxt($("al-q").value), qn=q.replace(/\D/g,""), pl=$("al-plat").value, ord=$("al-ordem").value;
+  const todos=montarAlunos();
+  let l=todos.filter(a=>(!nsel || (a.nivel && String(a.nivel.id)===nsel)) && (!pl || a.plats.has(pl)) &&
+    (!q || semAcentoTxt([a.nome,a.email].join(" ")).includes(q) || (qn.length>=3 && a.doc.includes(qn))));
+  l.sort((x,y)=> ord==="nome" ? String(x.nome).localeCompare(String(y.nome)) : ord==="pontos" ? y.pontos-x.pontos : ord==="recente" ? String(y.ultima).localeCompare(String(x.ultima)) : y.total-x.total);
+  $("al-totals").innerHTML=`<div><span>Alunos</span><b>${todos.length}</b></div>
+    <div class="main"><span>Total investido (aprovado)</span><b>${brl(todos.reduce((s,a)=>s+a.total,0))}</b></div>
+    <div><span>Compraram mais de uma vez</span><b>${todos.filter(a=>a.vendas.filter(v=>v.status==="aprovada").length>1).length}</b></div>
+    <div class="warn"><span>Parcelas em aberto</span><b>${brl(todos.reduce((s,a)=>s+a.aberto,0))}</b></div>`;
+  $("al-count").textContent=`${l.length} aluno${l.length===1?"":"s"}${l.length>500?" · mostrando 500":""}`;
+  $("al-empty").hidden=l.length>0;
+  if (selAluno && !todos.some(a=>a.chave===selAluno)) selAluno=null;
+  $("al-rows").innerHTML=l.slice(0,500).map(a=>`<tr class="clic ${a.chave===selAluno?"sel":""}" data-al="${esc(a.chave)}" tabindex="0">
+    <td class="trunc" title="${esc(a.email)}">${esc(a.nome||"—")}</td><td>${esc(doc(a.doc))}</td><td>${[...a.plats].map(x=>esc(PLAT_TODAS[x]||x)).join(", ")}</td>
+    <td class="num">${a.vendas.length}</td><td class="num"><b>${brl(a.total)}</b></td><td class="num">${a.aberto?brl(a.aberto):"—"}</td>
+    <td>${a.ultima?dt(a.ultima).slice(0,8):"—"}</td><td>${pillNivel(a.nivel)} <small class="note">${+a.pontos.toFixed(2)}%</small></td></tr>`).join("");
+  renderAlunoDetalhe(todos.find(a=>a.chave===selAluno));
+}
+function renderAlunoDetalhe(a){
+  if (!a){ $("al-d-id").textContent=""; $("al-detail").innerHTML='<p class="note">Selecione um aluno para ver as compras, o nível e as observações.</p>'; return; }
+  $("al-d-id").textContent=doc(a.doc)||a.email;
+  const prox=(S.niveis||[]).find(n=>Number(n.pontos_min)>a.pontos);
+  const ids=new Set(a.vendas.map(v=>v.id)); const notas=(S.ext||[]).filter(x=>ids.has(x.venda_id));
+  $("al-detail").innerHTML=`
+    <dl><dt>Nome</dt><dd>${esc(a.nome||"—")}</dd><dt>CPF/CNPJ</dt><dd>${esc(doc(a.doc))}</dd><dt>E-mail</dt><dd>${esc(a.email||"—")}</dd>
+      <dt>Telefone</dt><dd>${esc(a.tel||"—")}</dd><dt>Cidade</dt><dd>${esc(a.cidade||"—")}${a.uf?" / "+esc(a.uf):""}</dd>
+      <dt>Cliente desde</dt><dd>${a.primeira?dt(a.primeira).slice(0,8):"—"}</dd></dl>
+    <div class="card"><div class="sec-title">Fidelidade</div>
+      <p style="margin:0">${pillNivel(a.nivel)} com <b>${+a.pontos.toFixed(2)}%</b>${prox?` · faltam ${+(Number(prox.pontos_min)-a.pontos).toFixed(2)}% para ${esc(prox.nome)}`:""}</p>
+      <small class="note">Produtos comprados: ${[...a.prods].map(esc).join(", ")||"—"}</small></div>
+    <div class="card"><div class="sec-title">Compras (${a.vendas.length}) · ${brl(a.total)} aprovado${a.aberto?` · ${brl(a.aberto)} em aberto`:""}</div>
+      ${a.vendas.sort((x,y)=>String(y.data_venda).localeCompare(String(x.data_venda))).map(v=>`<div class="nota"><span><button type="button" class="btn link" data-abrir-venda="${v.id}">${esc(v.produto_nome||"—")}</button></span><b>${brl(v.valor_bruto)}</b>
+        <small>${dt(v.data_venda).slice(0,8)} · ${esc(PLAT_TODAS[v.plataforma]||v.plataforma)}${v.tipo==="contrato"?" · contrato":""} · ${pill(STATUS,v.status)} · ${esc(nomeEmpresa(v.empresa_id))}</small></div>`).join("")}</div>
+    ${notas.length?`<div class="card"><div class="sec-title">Notas fiscais (${notas.length})</div>${notas.map(x=>`<div class="nota"><span>${x.tipo_nf==="nfe"?"NF-e":"NFS-e"} nº ${esc(x.numero||"—")} · ${esc(nomeEmpresa(x.empresa_id))}</span><b>${brl(x.valor)}</b><small>${x.emissao?dt(x.emissao).slice(0,8):""} · ${esc(x.status_notazz||"")}</small></div>`).join("")}</div>`:""}
+    <form class="edit-form" id="al-form"><div class="sec-title">Cadastro</div>
+      <div class="form-grid">
+        <label class="field">Nome preferido<input name="nome" value="${esc((a.cad&&a.cad.nome)||"")}" placeholder="${esc(a.nome||"")}"></label>
+        <label class="field">E-mail preferido<input name="email" type="email" value="${esc((a.cad&&a.cad.email)||"")}" placeholder="${esc(a.email||"")}"></label>
+        <label class="field">Telefone preferido<input name="telefone" value="${esc((a.cad&&a.cad.telefone)||"")}" placeholder="${esc(a.tel||"")}"></label>
+      </div>
+      <label class="field">Observações sobre o aluno<textarea name="observacoes" rows="4">${esc((a.cad&&a.cad.observacoes)||"")}</textarea></label>
+      <div class="controls"><button class="btn primary" type="submit">Salvar cadastro</button>${a.cad&&a.cad.atualizado_por?`<small class="note">Atualizado por ${esc(a.cad.atualizado_por)} em ${dt(a.cad.atualizado_em)}</small>`:""}</div>
+    </form>`;
+  $("al-form").onsubmit=async e=>{
+    e.preventDefault(); const f=e.target;
+    const reg={ chave:a.chave, nome:f.nome.value.trim()||null, email:f.email.value.trim()||null, telefone:f.telefone.value.trim()||null, observacoes:f.observacoes.value.trim()||null, atualizado_em:new Date().toISOString(), atualizado_por:emailUsuario };
+    const { error } = await sb.from("alunos").upsert(reg);
+    if (error){ toast("Não foi possível salvar: "+error.message); return; }
+    toast("Cadastro do aluno salvo"); await carregarTudo(false);
+  };
+}
+$("al-rows").addEventListener("click", e=>{ const tr=e.target.closest("tr[data-al]"); if(tr){ selAluno=tr.dataset.al; renderAlunos(); } });
+$("al-rows").addEventListener("keydown", e=>{ if(e.key==="Enter"){ const tr=e.target.closest("tr[data-al]"); if(tr){ selAluno=tr.dataset.al; renderAlunos(); } } });
+$("al-detail").addEventListener("click", e=>{ const b=e.target.closest("[data-abrir-venda]"); if(b) abrirLancamento(Number(b.dataset.abrirVenda)); });
+["al-nivel","al-plat","al-ordem"].forEach(id=>$(id).addEventListener("change",renderAlunos));
+$("al-q").addEventListener("input",renderAlunos);
+
+/* ================= NÍVEIS DE FIDELIDADE ================= */
+function renderFidelidade(){
+  $("fi-niveis").innerHTML=(S.niveis||[]).map(n=>`<tr data-n="${n.id}">
+    <td><input data-f="nome" value="${esc(n.nome)}" aria-label="Nome do nível"></td>
+    <td class="num"><input type="number" step="any" data-f="pontos_min" value="${Number(n.pontos_min)}" aria-label="A partir de"></td>
+    <td><select data-f="cor" aria-label="Cor">${[["mute","Cinza"],["warn","Laranja"],["info","Azul"],["ok","Verde"],["bad","Vermelho"]].map(([k,t])=>`<option value="${k}" ${k===n.cor?"selected":""}>${t}</option>`).join("")}</select> ${pillNivel(n)}</td>
+    <td><button type="button" class="btn link danger" data-del-nivel="${n.id}">Excluir</button></td></tr>`).join("");
+  const q=semAcentoTxt($("fi-busca").value);
+  $("fi-prods").innerHTML=S.produtos.filter(p=>!p.agrupado_em && (!q||semAcentoTxt(p.nome).includes(q))).sort((a,b)=>String(nomeEmpresa(a.empresa_id)).localeCompare(String(nomeEmpresa(b.empresa_id)))||a.nome.localeCompare(b.nome))
+    .map(p=>`<tr><td class="trunc" title="${esc(p.nome)}">${esc(p.nome)}</td><td class="trunc">${esc(p.empresa_id?nomeEmpresa(p.empresa_id):"—")}</td><td>${esc(PLAT_TODAS[p.plataforma]||p.plataforma)}</td>
+      <td class="num"><input type="number" step="any" min="0" data-pontos="${p.id}" value="${Number(p.pontos_fidelidade||0)}" aria-label="% de fidelidade de ${esc(p.nome)}"></td></tr>`).join("");
+}
+$("fi-busca").addEventListener("input", renderFidelidade);
+$("fi-prods").addEventListener("change", async e=>{ const el=e.target.closest("[data-pontos]"); if(!el) return; const id=Number(el.dataset.pontos), v=Number(el.value)||0;
+  if (await salvar("produtos", id, {pontos_fidelidade:v}, "Porcentagem salva")){ const p=S.produtos.find(x=>x.id===id); if(p) p.pontos_fidelidade=v; } });
+$("fi-niveis").addEventListener("change", async e=>{ const tr=e.target.closest("tr[data-n]"); const f=e.target.dataset.f; if(!tr||!f) return;
+  const val = f==="pontos_min" ? Number(e.target.value)||0 : e.target.value.trim(); if (f==="nome" && !val){ toast("O nome não pode ficar vazio"); return; }
+  if (await salvar("niveis_fidelidade", Number(tr.dataset.n), {[f]:val}, "Nível salvo")) await carregarTudo(false); });
+$("fi-niveis").addEventListener("click", async e=>{ const b=e.target.closest("[data-del-nivel]"); if(!b) return;
+  if (b.dataset.ok!=="1"){ b.dataset.ok="1"; b.textContent="Confirmar"; return; }
+  const { error } = await sb.from("niveis_fidelidade").delete().eq("id",Number(b.dataset.delNivel)); if (error){ toast("Não foi possível: "+error.message); return; }
+  toast("Nível excluído"); await carregarTudo(false); });
+$("fi-novo").addEventListener("submit", async e=>{ e.preventDefault();
+  const { error } = await sb.from("niveis_fidelidade").insert({ nome:$("fi-nome").value.trim(), pontos_min:Number($("fi-min").value)||0 });
+  if (error){ toast(/duplicate|unique/i.test(error.message)?"Já existe um nível com esse nome":"Não foi possível: "+error.message); return; }
+  e.target.reset(); toast("Nível adicionado"); await carregarTudo(false); });
 
 /* ================= USUÁRIOS E ACESSOS ================= */
 const nomeSetor = id => (S.setores.find(s=>s.id===id)||{}).nome || "—";
