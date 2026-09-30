@@ -1600,20 +1600,41 @@ function lerXmlNota(texto, arquivo){
   };
 }
 
-// Lê o texto de um PDF de nota (quando não há XML). Tudo é conferido depois.
+// Chave de acesso da NF-e: confere o dígito verificador para não pegar outro número por engano
+function dvChaveOk(k){ let s=0,p=2; for (let i=42;i>=0;i--){ s+=Number(k[i])*p; p=p===9?2:p+1; } const r=s%11; return (r<2?0:11-r)===Number(k[43]); }
+function acharChave(t){
+  const runs = String(t).replace(/(\d)[ . ]+(?=\d)/g,"$1").match(/\d{44,}/g) || [];
+  for (const r of runs) for (let i=0;i+44<=r.length;i++){ const k=r.slice(i,i+44); if (/^(55|65)$/.test(k.slice(20,22)) && Number(k.slice(0,2))>=11 && dvChaveOk(k)) return k; }
+  return "";
+}
+// Lê o texto de UMA nota (uma página ou um grupo de páginas). Tudo é conferido depois.
 function lerTextoPdfNota(texto, cnpjsEmpresas, arquivo){
   const t = String(texto||"").replace(/\s+/g," ");
+  const chave = acharChave(t);
   const docs = [...t.matchAll(/\b(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})\b/g)].map(m=>soNum(m[1]));
-  const emissor = docs.find(d=>cnpjsEmpresas.includes(d)) || docs.find(d=>d.length===14) || "";
+  const emissor = (chave && chave.slice(6,20)) || docs.find(d=>cnpjsEmpresas.includes(d)) || docs.find(d=>d.length===14) || "";
   const cliente = docs.find(d=>d!==emissor) || "";
-  const tipo = /DANFE|NF-e|NOTA FISCAL ELETR[ÔO]NICA\b(?! DE SERVI)/i.test(t) && !/SERVI[ÇC]OS?\s+ELETR/i.test(t) ? "nfe" : "nfs";
-  const chave = ((t.replace(/[\s.]/g,"").match(/\d{44}/)||[])[0]) || "";
+  const tipo = chave || (/DANFE|NOTA FISCAL ELETR[ÔO]NICA\b(?! DE SERVI)/i.test(t) && !/SERVI[ÇC]OS?\s+ELETR|NFS-?e/i.test(t)) ? "nfe" : "nfs";
   const numBruto = ((t.match(/N[úu]mero\s*(?:da\s*)?(?:Nota|NFS-?e|NF-?e)?\s*[:\-]?\s*([\d.]{1,13})/i) || t.match(/N[ºo°]\.?\s*([\d.]{1,13})/i) || [])[1]) || "";
   const numero = chave ? String(Number(chave.slice(25,34))) : numBruto.replace(/\D/g,"").replace(/^0+/,"");
-  const valor = numBR(((t.match(/Valor\s*(?:Total|L[íi]quido|dos\s*Servi[çc]os|da\s*Nota)[^\d]{0,40}([\d.]+,\d{2})/i) || t.match(/R\$\s*([\d.]+,\d{2})/) || [])[1]));
-  const data = dataIsoBR(((t.match(/(\d{2}\/\d{2}\/\d{4})/)||[])[1]));
-  return { tipo_nf:tipo, numero, chave, emissao:data, emissor_cnpj:emissor, cliente_documento:cliente, cliente_nome:"", cliente_email:"",
+  const valor = numBR(((t.match(/VALOR\s*TOTAL\s*DA\s*NOTA[^\d]{0,60}([\d.]+,\d{2})/i) || t.match(/Valor\s*(?:Total|L[íi]quido|dos\s*Servi[çc]os|da\s*Nota)[^\d]{0,40}([\d.]+,\d{2})/i) || t.match(/R\$\s*([\d.]+,\d{2})/) || [])[1]));
+  const data = dataIsoBR(((t.match(/EMISS[ÃA]O[^\d]{0,40}(\d{2}\/\d{2}\/\d{4})/i) || t.match(/(\d{2}\/\d{2}\/\d{4})/) || [])[1]));
+  const nome = ((t.match(/NOME\s*\/\s*RAZ[ÃA]O\s*SOCIAL\s*:?\s*(.{3,90}?)\s+(?:CNPJ|CPF)/i) || [])[1] || "").trim();
+  return { tipo_nf:tipo, numero, chave, emissao:data, emissor_cnpj:emissor, cliente_documento:cliente, cliente_nome:nome, cliente_email:"",
            valor, descricao:"", status: /CANCELAD/i.test(t) ? "Cancelada" : "Autorizada", arquivo, confere:true };
+}
+// Um PDF pode ter várias notas (ex.: VHSYS baixa todas num arquivo só). Separa por página:
+// páginas seguidas com a mesma nota (mesma chave/número) ficam juntas.
+function agruparPaginas(pags, cnpjs, arquivo){
+  const grupos=[];
+  pags.forEach((txt,i)=>{
+    const r=lerTextoPdfNota(txt, cnpjs, arquivo);
+    const id = r.chave || (r.numero ? r.emissor_cnpj+":"+r.numero : "");
+    const ult = grupos[grupos.length-1];
+    if (ult && (!id || id===ult.id)) { ult.paginas.push(i); ult.texto+=" "+txt; return; }
+    grupos.push({ id, paginas:[i], texto:txt });
+  });
+  return grupos.map(g=>({ ...g, nota: lerTextoPdfNota(g.texto, cnpjs, arquivo) }));
 }
 
 function identNota(n){
@@ -1626,10 +1647,17 @@ function carregarScript(url, teste){ if (teste()) return Promise.resolve(); retu
 const libZip = ()=>carregarScript("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js", ()=>window.JSZip);
 const libPdf = async ()=>{ await carregarScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js", ()=>window.pdfjsLib); window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js"; };
 const libJsPdf = ()=>carregarScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js", ()=>window.jspdf);
-async function textoDoPdf(blob){
-  await libPdf(); const pdf=await window.pdfjsLib.getDocument({data:await blob.arrayBuffer()}).promise; let t="";
-  for (let i=1;i<=Math.min(pdf.numPages,2);i++){ const c=await (await pdf.getPage(i)).getTextContent(); t+=" "+c.items.map(x=>x.str).join(" "); }
-  return t;
+const libPdfLib = ()=>carregarScript("https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js", ()=>window.PDFLib);
+// Texto de cada página do PDF (todas as páginas)
+async function paginasDoPdf(blob, aviso){
+  await libPdf(); const buf=await blob.arrayBuffer(); const pdf=await window.pdfjsLib.getDocument({data:buf.slice(0)}).promise; const pags=[];
+  for (let i=1;i<=pdf.numPages;i++){ if (aviso && (i%10===1 || i===pdf.numPages)) aviso(i, pdf.numPages); const c=await (await pdf.getPage(i)).getTextContent(); pags.push(c.items.map(x=>x.str).join(" ")); }
+  return { pags, buf };
+}
+// Monta um PDF só com as páginas de uma nota
+async function recortarPdf(fonte, paginas){
+  const out=await window.PDFLib.PDFDocument.create(); (await out.copyPages(fonte, paginas)).forEach(pg=>out.addPage(pg));
+  return new Blob([await out.save()], {type:"application/pdf"});
 }
 async function gerarEspelho(n){
   await libJsPdf(); const d=new window.jspdf.jsPDF({unit:"mm",format:"a4"}); let y=16; const L=(txt,tam=10,neg=false)=>{ d.setFont("helvetica",neg?"bold":"normal"); d.setFontSize(tam); d.splitTextToSize(String(txt||""),180).forEach(l=>{ if(y>280){ d.addPage(); y=16; } d.text(l,15,y); y+=tam*0.5; }); y+=1.5; };
@@ -1669,7 +1697,7 @@ $("hi-arq").addEventListener("change", async ()=>{
       r.xmlTexto=it.texto; notas.push(r);
     }catch(err){ problemas.push(`${it.nome}: XML inválido`); }
   }
-  // junta PDF ao XML pela chave ou pelo número
+  // junta PDF ao XML pelo nome do arquivo (chave ou número)
   const semPar=[];
   for (const p of pdfs){
     const dig=p.nome.replace(/\D+/g," ").trim().split(" ").filter(Boolean);
@@ -1678,13 +1706,27 @@ $("hi-arq").addEventListener("change", async ()=>{
     if (!alvo){ const cands=notas.filter(n=>!n.pdfBlob && dig.some(x=>x.replace(/^0+/,"")===n.numero) && (!dig.some(x=>x.length===14) || dig.includes(n.emissor_cnpj))); if (cands.length===1) alvo=cands[0]; }
     if (alvo && !alvo.pdfBlob) alvo.pdfBlob=p.blob; else semPar.push(p);
   }
-  // PDF sem XML: lê o texto
-  const cnpjs=S.empresas.map(e=>e.cnpj).filter(Boolean);
+  // Demais PDFs: lê todas as páginas. Se o arquivo tiver várias notas, separa uma por uma.
+  const cnpjs=S.empresas.map(e=>e.cnpj).filter(Boolean), vistos=new Set(), multi=[];
   let i=0;
   for (const p of semPar){
-    $("hi-info").textContent=`Lendo PDFs sem XML… ${++i} de ${semPar.length}`;
-    try{ const r=lerTextoPdfNota(await textoDoPdf(p.blob), cnpjs, p.nome); if (!r.numero && !r.chave){ problemas.push(`${p.nome}: não consegui ler o número da nota no PDF`); continue; } r.pdfBlob=p.blob; notas.push(r); }
-    catch(err){ problemas.push(`${p.nome}: PDF não pôde ser lido`); }
+    i++;
+    try{
+      const { pags, buf } = await paginasDoPdf(p.blob, (pg,tot)=>{ $("hi-info").textContent=`Lendo PDF ${i} de ${semPar.length} (${p.nome}): página ${pg} de ${tot}…`; });
+      const grupos=agruparPaginas(pags, cnpjs, p.nome);
+      let fonte=null;
+      if (grupos.length>1){ await libPdfLib(); fonte=await window.PDFLib.PDFDocument.load(buf,{ignoreEncryption:true}); multi.push(`${p.nome}: ${grupos.length} notas em ${pags.length} páginas`); }
+      for (const g of grupos){
+        const r=g.nota; const pgs = grupos.length>1 ? ` (págs. ${g.paginas[0]+1}${g.paginas.length>1?"-"+(g.paginas[g.paginas.length-1]+1):""})` : "";
+        if (!r.numero && !r.chave){ problemas.push(`${p.nome}${pgs}: não consegui ler o número da nota`); continue; }
+        const blob = fonte ? await recortarPdf(fonte, g.paginas) : p.blob;
+        // se o XML dessa nota também veio, o PDF vai junto com ele
+        const xml = notas.find(n=>n.xmlTexto && !n.pdfBlob && ((r.chave && n.chave===r.chave) || (n.numero===r.numero && n.emissor_cnpj===r.emissor_cnpj && n.tipo_nf===r.tipo_nf)));
+        if (xml){ xml.pdfBlob=blob; continue; }
+        const id=identNota(r); if (vistos.has(id)){ problemas.push(`${p.nome}${pgs}: nota nº ${r.numero} repetida, ignorei`); continue; } vistos.add(id);
+        r.arquivo=p.nome+pgs; r.pdfBlob=blob; notas.push(r);
+      }
+    }catch(err){ problemas.push(`${p.nome}: PDF não pôde ser lido (${err.message||err})`); }
   }
   const origem=$("hi-origem").value, existentes=new Map((S.ext||[]).map(x=>[x.notazz_id,x]));
   notas.forEach(n=>{ n.ident=identNota(n); n.origem=origem; const ex=existentes.get(n.ident); n.jaExiste=!!ex && !!(ex.xml_path||ex.pdf_path) && !(n.pdfBlob && (!ex.pdf_path || ex.pdf_espelho)); });
@@ -1694,6 +1736,7 @@ $("hi-arq").addEventListener("change", async ()=>{
   $("hi-prev").innerHTML=`<div class="card"><b>${itens.length} arquivo(s) lido(s)</b>
     <span>${notas.filter(n=>n.xmlTexto).length} nota(s) por XML · ${notas.filter(n=>n.xmlTexto&&n.pdfBlob).length} com PDF junto · ${notas.filter(n=>n.confere).length} lida(s) só do PDF (conferir) · ${eventos.length} cancelamento(s)</span>
     <span>${novas.length} para importar · ${notas.length-novas.length} já estavam importadas</span>
+    ${multi.length?`<span>PDFs com várias notas, separados nota por nota: ${multi.map(esc).join(" · ")}</span>`:""}
     ${semEmp.length?`<span class="alert">CNPJs que ainda não estão em Empresas (as notas entram mesmo assim e passam para a empresa quando você cadastrar): ${semEmp.map(esc).join(" · ")}</span>`:""}
     ${problemas.length?`<details><summary>${problemas.length} arquivo(s) com problema</summary><ul>${problemas.slice(0,100).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>`:""}</div>
     <div class="tbl-wrap"><table><thead><tr><th>Arquivo</th><th>Tipo</th><th>Nº</th><th>Emissão</th><th>Emissora</th><th>Cliente</th><th>CPF/CNPJ</th><th class="num">Valor</th><th>Situação</th><th>PDF</th></tr></thead><tbody>
