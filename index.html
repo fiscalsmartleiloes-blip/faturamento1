@@ -238,6 +238,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
   <nav class="side-nav" aria-label="Menu">
     <button type="button" data-aba="vendas" aria-current="page">Vendas</button>
     <button type="button" data-aba="faturamento" aria-current="false">Faturamento<span class="badge" id="badge-fat" hidden></span></button>
+    <button type="button" data-aba="emitidas" aria-current="false">Notas emitidas<span class="badge" id="badge-emit" hidden></span></button>
     <button type="button" data-aba="importar" aria-current="false">Importar vendas</button>
     <button type="button" data-aba="fluxo" aria-current="false">Fluxo de recebimento</button>
     <div class="side-group">Configuração<span class="badge" id="badge-config" hidden></span></div>
@@ -295,7 +296,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
 
   <!-- ================= FATURAMENTO ================= -->
   <section id="aba-faturamento" class="stack" hidden>
-    <p class="note">Notas calculadas pelo split de cada venda aprovada. Elas ficam em carência pelo prazo da empresa, depois aguardam sua autorização (se a empresa exigir) e então podem ser enviadas para a Notazz.</p>
+    <p class="note">Notas calculadas pelo split de cada venda aprovada. Elas ficam em carência pelo prazo da empresa, depois aguardam sua autorização (se a empresa exigir) e então podem ser enviadas para a Notazz. Se a empresa não estiver com "transmitir na hora", a nota chega na Notazz como Pendente e você transmite pelo painel dela; a confirmação volta sozinha para cá.</p>
     <div class="chips" id="fat-chips" role="group" aria-label="Situação"></div>
     <div class="controls">
       <select id="fat-tipo" aria-label="Tipo de nota"><option value="">NF-e e NFS-e</option><option value="nfe">Só NF-e (produto)</option><option value="nfs">Só NFS-e (serviço)</option></select>
@@ -307,6 +308,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
       <button class="btn" type="button" id="fat-desautorizar" disabled>Desfazer autorização</button>
       <button class="btn primary" type="button" id="fat-enviar" disabled>Enviar para a Notazz</button>
       <button class="btn" type="button" id="fat-consultar" disabled>Buscar retorno da Notazz</button>
+      <input id="fat-motivo" placeholder="Motivo do cancelamento (obrigatório para NF-e)" aria-label="Motivo do cancelamento" style="min-width:260px">
       <button class="btn danger" type="button" id="fat-cancelar" disabled>Cancelar na Notazz</button>
     </div>
     <div class="panel">
@@ -318,6 +320,36 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
       <div class="empty" id="fat-empty" hidden>Nenhuma nota nesta situação.</div></div>
     </div>
     <div id="fat-res"></div>
+  </section>
+
+  <!-- ================= NOTAS EMITIDAS ================= -->
+  <section id="aba-emitidas" class="stack" hidden>
+    <div class="panel"><div class="panel-body">
+      <p class="note">Traz da Notazz as notas que você já emitiu (inclusive fora deste sistema) e liga cada uma à venda do aluno. O vínculo automático usa, nesta ordem: o código da venda, o CPF/CNPJ do XML da nota e o e-mail. Ao vincular, a nota prevista igual daquela venda passa a "emitida", para o sistema não pedir para emitir de novo.</p>
+      <div class="controls">
+        <label class="field">Empresa<select id="em-emp"></select></label>
+        <label class="field">De<input type="date" id="em-de"></label>
+        <label class="field">Até<input type="date" id="em-ate"></label>
+        <button class="btn primary" type="button" id="em-buscar">Buscar notas na Notazz</button>
+        <button class="btn" type="button" id="em-auto">Vincular automaticamente</button>
+        <span class="note" id="em-prog"></span>
+      </div>
+      <div id="em-res"></div>
+    </div></div>
+    <div class="controls">
+      <select id="em-f-vinc" aria-label="Vínculo"><option value="sem">Sem vínculo</option><option value="com">Vinculadas</option><option value="">Todas</option></select>
+      <select id="em-f-tipo" aria-label="Tipo"><option value="">NF-e e NFS-e</option><option value="nfe">NF-e</option><option value="nfs">NFS-e</option></select>
+      <select id="em-f-status" aria-label="Situação na Notazz"><option value="">Todas as situações</option><option value="autoriz">Autorizadas</option><option value="cancel">Canceladas</option><option value="outras">Outras</option></select>
+      <input type="search" id="em-q" placeholder="Buscar cliente, CPF, e-mail ou número" aria-label="Buscar nota">
+    </div>
+    <section class="totals t4" id="em-totals"></section>
+    <div class="panel">
+      <div class="panel-head"><h2>Notas da Notazz</h2><small id="em-count"></small></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Emissão</th><th>Nº</th><th>Tipo</th><th>Emissora</th><th>Cliente</th><th>CPF/CNPJ</th><th class="num">Valor</th><th>Situação</th><th>Venda vinculada</th><th></th></tr></thead>
+        <tbody id="em-rows"></tbody>
+      </table><div class="empty" id="em-empty" hidden>Nenhuma nota. Use "Buscar notas na Notazz" para trazer o histórico.</div></div>
+    </div>
   </section>
 
   <!-- ================= IMPORTAR ================= -->
@@ -533,11 +565,12 @@ async function carregarTudo(primeiraVez){
     sb.from("regras_recebimento").select("*").order("plataforma"),
     sb.from("produto_split").select("*").order("ordem"),
     sb.from("vw_recebimentos").select("*").order("data_prevista").limit(3000),
-    sb.from("vw_faturamento").select("*").order("liberada_em").limit(5000)
+    sb.from("vw_faturamento").select("*").order("liberada_em").limit(5000),
+    sb.from("notas_externas").select("id,notazz_id,empresa_id,tipo_nf,numero,status_notazz,valor,emissao,cliente_nome,cliente_email,cliente_celular,cliente_documento,venda_ref,pdf_url,xml_url,venda_id,nota_id,vinculo,vinculado_por").order("emissao",{ascending:false}).limit(10000)
   ]);
   const erro = q.find(r=>r.error);
   if (erro){ if (/JWT|auth/i.test(erro.error.message)) { await sb.auth.signOut(); return; } toast("Erro ao carregar: "+erro.error.message); return; }
-  [S.empresas,S.produtos,S.vendas,S.cats,S.coprod,S.regras,S.splits,S.receb,S.fat] = q.map(r=>r.data);
+  [S.empresas,S.produtos,S.vendas,S.cats,S.coprod,S.regras,S.splits,S.receb,S.fat,S.ext] = q.map(r=>r.data);
 
   await Promise.all(Object.keys(PLAT).map(async pl=>{
     const r = await sb.from("eventos_webhook").select("recebido_em").eq("plataforma",pl).order("recebido_em",{ascending:false}).limit(1);
@@ -558,6 +591,9 @@ function renderTudo(){
   if (abaAtual==="vendas") renderVendas();
   if (abaAtual==="fluxo") renderFluxo();
   if (abaAtual==="faturamento") renderFat();
+  if (abaAtual==="emitidas") renderEmit();
+  const semVinc=(S.ext||[]).filter(x=>!x.venda_id && !/cancel|rejeit|denegad/i.test(x.status_notazz||"") && passaEmpresaExt(x)).length;
+  $("badge-emit").hidden=!semVinc; $("badge-emit").textContent=semVinc;
   const prontas=(S.fat||[]).filter(n=>["pronta","aguardando_autorizacao","erro"].includes(n.situacao) && passaEmpresaFat(n)).length;
   $("badge-fat").hidden=!prontas; $("badge-fat").textContent=prontas;
   if (abaAtual==="config") renderConfig();
@@ -565,13 +601,13 @@ function renderTudo(){
 $("f-emp").addEventListener("change", renderTudo);
 
 /* ---------------- menu lateral ---------------- */
-const TITULOS = {vendas:["Contas a receber","Captação de vendas"], faturamento:["Notas fiscais","Faturamento"], importar:["Contas a receber","Importar vendas antigas"], fluxo:["Contas a receber","Fluxo de recebimento"],
+const TITULOS = {vendas:["Contas a receber","Captação de vendas"], faturamento:["Notas fiscais","Faturamento"], emitidas:["Notas fiscais","Notas emitidas na Notazz"], importar:["Contas a receber","Importar vendas antigas"], fluxo:["Contas a receber","Fluxo de recebimento"],
   produtos:["Configuração","Produtos e split por empresa"], empresas:["Configuração","Empresas e tributação"], coprodutores:["Configuração","Coprodutores externos"],
   regras:["Configuração","Regras de recebimento"], categorias:["Configuração","Categorias"]};
 document.querySelectorAll(".side-nav [data-aba]").forEach(b=>b.onclick=()=>{ if(b.dataset.sub) subAtual=b.dataset.sub; abrirAba(b.dataset.aba); });
 function abrirAba(a){
   abaAtual=a; editando=null;
-  ["vendas","faturamento","importar","fluxo","config"].forEach(x=>$("aba-"+x).hidden = x!==a);
+  ["vendas","faturamento","emitidas","importar","fluxo","config"].forEach(x=>$("aba-"+x).hidden = x!==a);
   ["produtos","empresas","coprodutores","regras","categorias"].forEach(x=>$("sub-"+x).hidden = x!==subAtual);
   document.querySelectorAll(".side-nav [data-aba]").forEach(b=>b.setAttribute("aria-current",
     (b.dataset.aba===a && (!b.dataset.sub || b.dataset.sub===subAtual)) ? "page" : "false"));
@@ -769,7 +805,8 @@ async function carregarLateral(v){
       <span>${esc(x.etapa==="externo" ? ((S.coprod.find(c=>c.id===x.coprodutor_id)||{}).nome||"Coprodutor externo") : nomeEmpresa(x.empresa_id))}</span><b>${brl(x.valor)}</b>
       <small>${esc(TIPONF[x.tipo_nf])}${x.descricao_nf?" · "+esc(x.descricao_nf):""} · ${pill(NOTA,x.status)}${x.numero_nf?" · nº "+esc(x.numero_nf):""}</small></div>`).join("")
     : `<p class="note">${v.status!=="aprovada" ? "Venda não aprovada: nenhuma nota prevista." : !v.empresa_id ? "Defina a empresa do produto para calcular as notas." : "O split fiscal deste produto ainda não foi configurado."}</p>`)
-    + (libera ? `<p class="note">Liberada para emissão a partir de ${libera.toLocaleDateString("pt-BR")}.</p>`:"");
+    + (libera ? `<p class="note">Liberada para emissão a partir de ${libera.toLocaleDateString("pt-BR")}.</p>`:"")
+    + (()=>{ const ex=(S.ext||[]).filter(x=>x.venda_id===v.id); return ex.length ? `<div class="sec-title" style="margin-top:8px">Notas vinculadas do histórico da Notazz</div>` + ex.map(x=>`<div class="nota"><span>${esc(nomeEmpresa(x.empresa_id))} · nº ${esc(x.numero||"—")}</span><b>${brl(x.valor)}</b><small>${x.tipo_nf==="nfe"?"NF-e":"NFS-e"} · ${esc(x.status_notazz||"")} · ${x.emissao?dt(x.emissao).slice(0,8):""}</small></div>`).join("") : ""; })();
   const p = ev.data ? JSON.parse(JSON.stringify(ev.data.payload)) : null;
   if (p && p.hottok) p.hottok="(oculto)";
   $("raw").textContent = p ? JSON.stringify(p,null,2) : (v.ultimo_evento==="IMPORTACAO_CSV" ? "Venda importada por arquivo CSV." : "—");
@@ -1211,7 +1248,7 @@ async function acaoNotazz(acao, botao, situacoes, confirmaTxt){
   botao.dataset.confirma=""; const txt=botao.dataset.txt||botao.textContent; botao.disabled=true; botao.textContent="Aguarde…";
   const res=[];
   for (let i=0;i<ids.length;i+=20){
-    const { data, error } = await sb.functions.invoke("notazz",{ body:{ acao, notas: ids.slice(i,i+20) } });
+    const { data, error } = await sb.functions.invoke("notazz",{ body:{ acao, notas: ids.slice(i,i+20), motivo: $("fat-motivo").value.trim() } });
     if (error){ let m=error.message; try{ m=(await error.context.json()).erro||m; }catch(_){}
       res.push({situacao:"erro", mensagem:m}); break; }
     res.push(...(data.resultados||[]));
@@ -1226,7 +1263,100 @@ async function acaoNotazz(acao, botao, situacoes, confirmaTxt){
 }
 $("fat-enviar").onclick=e=>acaoNotazz("enviar", e.currentTarget, ["pronta","erro"], "Confirmar envio de {n} nota(s)");
 $("fat-consultar").onclick=e=>acaoNotazz("consultar", e.currentTarget, ["enviada","emitida"]);
-$("fat-cancelar").onclick=e=>acaoNotazz("cancelar", e.currentTarget, ["enviada","emitida","cancelar"], "Confirmar cancelamento de {n} nota(s)");
+$("fat-cancelar").onclick=e=>{
+  const temNfe=(S.fat||[]).some(n=>fatSel.has(n.id) && n.tipo_nf==="nfe");
+  if (temNfe && $("fat-motivo").value.trim().length<15){ toast("Escreva o motivo do cancelamento (mínimo 15 caracteres)"); $("fat-motivo").focus(); return; }
+  acaoNotazz("cancelar", e.currentTarget, ["enviada","emitida","cancelar"], "Confirmar cancelamento de {n} nota(s)");
+};
+
+/* ================= NOTAS EMITIDAS ================= */
+const passaEmpresaExt = x => { const e=empFiltro(); return e==="" || e==="sem" || String(x.empresa_id)===e || (x.venda_id && String((S.vendas.find(v=>v.id===x.venda_id)||{}).empresa_id)===e); };
+const VINC={transacao:"código da venda",cpf:"CPF",email:"e-mail",manual:"manual"};
+let emAbrindo=null;
+function renderEmit(){
+  const hoje=new Date(), ini=new Date(hoje.getFullYear(), hoje.getMonth()-2, 1);
+  if (!$("em-de").value) $("em-de").value=ini.toISOString().slice(0,10);
+  if (!$("em-ate").value) $("em-ate").value=hoje.toISOString().slice(0,10);
+  const selE=$("em-emp").value;
+  $("em-emp").innerHTML=S.empresas.map(e=>`<option value="${e.id}">${esc(e.nome)}</option>`).join("");
+  $("em-emp").value = selE || (empFiltro() && empFiltro()!=="sem" ? empFiltro() : (S.empresas.find(e=>e.nome.toUpperCase().includes(EMPRESA_PADRAO))||S.empresas[0]||{}).id);
+  const fv=$("em-f-vinc").value, ft=$("em-f-tipo").value, fs=$("em-f-status").value, q=semAcentoTxt($("em-q").value), qn=q.replace(/\D/g,"");
+  const base=(S.ext||[]).filter(passaEmpresaExt);
+  const lista=base.filter(x=>(!fv || (fv==="sem"?!x.venda_id:!!x.venda_id)) && (!ft||x.tipo_nf===ft) &&
+    (!fs || (fs==="autoriz"?/autoriz/i.test(x.status_notazz||""):fs==="cancel"?/cancel/i.test(x.status_notazz||""):!/autoriz|cancel/i.test(x.status_notazz||""))) &&
+    (!q || semAcentoTxt([x.cliente_nome,x.cliente_email,x.numero].join(" ")).includes(q) || (qn.length>=3 && String(x.cliente_documento||"").includes(qn))));
+  const aut=base.filter(x=>/autoriz/i.test(x.status_notazz||""));
+  $("em-totals").innerHTML=`
+    <div><span>Notas no histórico</span><b>${base.length}</b></div>
+    <div class="main"><span>Autorizadas</span><b>${brl(aut.reduce((a,x)=>a+Number(x.valor||0),0))}</b></div>
+    <div><span>Vinculadas a vendas</span><b>${base.filter(x=>x.venda_id).length}</b></div>
+    <div class="warn"><span>Sem vínculo (autorizadas)</span><b>${aut.filter(x=>!x.venda_id).length}</b></div>`;
+  $("em-count").textContent=`${lista.length} nota${lista.length===1?"":"s"}${lista.length>500?" · mostrando 500":""}`;
+  $("em-empty").hidden=lista.length>0;
+  $("em-rows").innerHTML=lista.slice(0,500).map(x=>{
+    const v=S.vendas.find(z=>z.id===x.venda_id);
+    const st=x.status_notazz||"—", cls=/autoriz/i.test(st)?"p-ok":/cancel/i.test(st)?"p-mute":/rejeit|denegad/i.test(st)?"p-bad":"p-warn";
+    return `<tr data-x="${x.id}">
+      <td>${x.emissao?dt(x.emissao).slice(0,8):"—"}</td><td>${esc(x.numero||"—")}</td><td>${x.tipo_nf==="nfe"?"NF-e":"NFS-e"}</td>
+      <td class="trunc">${esc(x.empresa_id?nomeEmpresa(x.empresa_id):"—")}</td>
+      <td class="trunc" title="${esc(x.cliente_email||"")}">${esc(x.cliente_nome||"—")}</td><td>${esc(doc(x.cliente_documento))}</td>
+      <td class="num"><b>${brl(x.valor)}</b></td><td><span class="pill ${cls}">${esc(st)}</span></td>
+      <td>${v?`<button type="button" class="btn link" data-abrir-venda="${v.id}">${esc(v.comprador_nome||"")} · ${esc(v.produto_nome||"")}</button><br><small class="note">por ${esc(VINC[x.vinculo]||x.vinculo||"")}${x.nota_id?" · nota prevista baixada":""}</small>`:'<span class="pill p-warn">Sem vínculo</span>'}</td>
+      <td class="controls">${x.pdf_url?`<a class="btn link" href="${esc(x.pdf_url)}" target="_blank" rel="noopener">PDF</a>`:""}
+        ${v?`<button type="button" class="btn link danger" data-desvinc="${x.id}">Desvincular</button>`:`<button type="button" class="btn link" data-vinc="${x.id}">Vincular</button>`}</td>
+    </tr>${emAbrindo===x.id?`<tr><td colspan="10"><div class="merge-row">
+      <input type="search" id="em-busca" placeholder="Buscar aluno por nome, CPF ou e-mail" value="${esc(x.cliente_documento||x.cliente_nome||"")}" style="min-width:260px">
+      <select id="em-dest" style="min-width:320px"></select>
+      <button type="button" class="btn primary" data-confirma-vinc="${x.id}">Vincular a esta venda</button>
+      <button type="button" class="btn link" data-fechar-vinc>Fechar</button></div></td></tr>`:""}`;
+  }).join("");
+  if (emAbrindo) atualizarDestinos();
+}
+function atualizarDestinos(){
+  const q=semAcentoTxt($("em-busca")?.value||""), qn=q.replace(/\D/g,"");
+  const l=q.length<2?[]:S.vendas.filter(v=>v.tipo!=="parcela" && (semAcentoTxt([v.comprador_nome,v.comprador_email,v.produto_nome].join(" ")).includes(q) || (qn.length>=3 && String(v.comprador_documento||"").includes(qn))))
+    .sort((a,b)=>(b.status==="aprovada")-(a.status==="aprovada")||String(b.data_venda).localeCompare(String(a.data_venda))).slice(0,50);
+  $("em-dest").innerHTML = l.length ? l.map(v=>`<option value="${v.id}">${v.tipo==="contrato"?"Contrato · ":""}${esc(v.comprador_nome||"")} · ${esc(v.produto_nome||"")} · ${brl(v.valor_bruto)} · ${dt(v.data_venda).slice(0,8)}</option>`).join("") : '<option value="">Nenhuma venda encontrada</option>';
+}
+["em-f-vinc","em-f-tipo","em-f-status"].forEach(id=>$(id).addEventListener("change",renderEmit));
+$("em-q").addEventListener("input",renderEmit);
+$("em-rows").addEventListener("input", e=>{ if(e.target.id==="em-busca") atualizarDestinos(); });
+$("em-rows").addEventListener("click", async e=>{
+  const t=e.target;
+  if (t.closest("[data-abrir-venda]")){ abrirLancamento(Number(t.closest("[data-abrir-venda]").dataset.abrirVenda)); return; }
+  if (t.dataset.vinc){ emAbrindo=Number(t.dataset.vinc); renderEmit(); $("em-busca")?.focus(); return; }
+  if (t.hasAttribute("data-fechar-vinc")){ emAbrindo=null; renderEmit(); return; }
+  if (t.dataset.confirmaVinc){
+    const dest=Number($("em-dest").value); if(!dest){ toast("Escolha a venda"); return; }
+    const { data, error } = await sb.rpc("vincular_nota_externa",{p_ext:Number(t.dataset.confirmaVinc),p_venda:dest});
+    if (error){ toast("Não foi possível vincular: "+error.message); return; }
+    emAbrindo=null; toast(data==="vinculada"?"Nota vinculada à venda":"Nota vinculada; a nota prevista da venda foi marcada como emitida"); await carregarTudo(false); return;
+  }
+  if (t.dataset.desvinc){
+    if (t.dataset.ok!=="1"){ t.dataset.ok="1"; t.textContent="Confirmar"; return; }
+    const { error } = await sb.rpc("desvincular_nota_externa",{p_ext:Number(t.dataset.desvinc)});
+    if (error){ toast("Não foi possível desvincular: "+error.message); return; }
+    toast("Vínculo desfeito"); await carregarTudo(false);
+  }
+});
+$("em-buscar").onclick=async ()=>{
+  const b=$("em-buscar"), de=$("em-de").value, ate=$("em-ate").value, emp=Number($("em-emp").value);
+  if (!de||!ate||!emp){ toast("Escolha a empresa e o período"); return; }
+  b.disabled=true; $("em-prog").textContent="Buscando na Notazz… pode levar alguns minutos para períodos longos.";
+  const { data, error } = await sb.functions.invoke("notazz",{ body:{ acao:"importar_emitidas", empresa_id:emp, de, ate } });
+  b.disabled=false; $("em-prog").textContent="";
+  let erro=error?error.message:null; if (error){ try{ erro=(await error.context.json()).erro||erro; }catch(_){} }
+  $("em-res").innerHTML = erro ? `<div class="alert">${esc(erro)}</div>` :
+    `<div class="card"><b>${esc(data.empresa)}</b><span>${data.nfs} NFS-e e ${data.nfe} NF-e trazidas da Notazz · ${data.vinculadas} vinculada(s) automaticamente</span>
+     ${(data.avisos||[]).length?`<small class="note">${data.avisos.map(esc).join(" · ")}</small>`:""}
+     <small class="note">Buscar de novo o mesmo período não duplica: as notas são atualizadas.</small></div>`;
+  await carregarTudo(false);
+};
+$("em-auto").onclick=async ()=>{
+  const { data, error } = await sb.rpc("vincular_notas_externas");
+  if (error){ toast("Não foi possível: "+error.message); return; }
+  toast(`${data} nota(s) vinculada(s) automaticamente`); await carregarTudo(false);
+};
 
 /* ================= FLUXO ================= */
 function renderFluxo(){
@@ -1490,7 +1620,9 @@ const CAMPOS_EMPRESA = [
     ["codigo_tributacao_municipio","Código de tributação do município","text"],["aliquota_iss","Alíquota ISS (%)","pct"],["iss_retido","ISS retido na fonte","check"]]],
   ["NF-e (produto)", [["natureza_operacao","Natureza da operação","text"],["cfop_dentro_estado","CFOP dentro do estado","text"],
     ["cfop_fora_estado","CFOP fora do estado","text"],["ncm","NCM","text"],["cst_csosn","CST / CSOSN","text"]]],
-  ["Regras de emissão", [["emissao_modo","Quando emitir a nota de contratos parcelados","select",[["total","Pelo valor total do contrato"],["parcela","A cada parcela recebida"]]],["carencia_dias","Carência antes de emitir (dias)","int"],["exige_autorizacao","Exige autorização manual para emitir","check"],
+  ["Regras de emissão", [["emissao_modo","Quando emitir a nota de contratos parcelados","select",[["total","Pelo valor total do contrato"],["parcela","A cada parcela recebida"]]],["carencia_dias","Carência antes de emitir (dias)","int"],
+    ["notazz_transmitir","Notazz: transmitir na hora para prefeitura/SEFAZ (desmarcado = fica Pendente no painel da Notazz para você conferir)","check"],
+    ["notazz_enviar_email","Notazz: enviar a nota por e-mail ao aluno quando for autorizada","check"],["exige_autorizacao","Exige autorização manual para emitir","check"],
     ["observacoes_nf","Informações complementares da nota","area"]]]
 ];
 $("ce-emp").addEventListener("change", renderCfgEmpresas);
