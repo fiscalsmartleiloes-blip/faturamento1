@@ -356,7 +356,21 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
       </div>
       <div id="em-res"></div>
     </div></div>
+    <div class="panel"><div class="panel-body">
+      <h3>Importar notas antigas (VHSYS ou outro sistema)</h3>
+      <p class="note">Selecione os arquivos exportados: XML, PDF ou ZIP com vários deles, de qualquer empresa. A empresa é reconhecida pelo CNPJ da nota. PDF com o mesmo número ou chave do XML fica junto dele. XML sem PDF pode ganhar um PDF espelho. PDF sozinho é lido pelo texto e fica marcado para você conferir. Importar de novo os mesmos arquivos não duplica.</p>
+      <div class="controls">
+        <label class="field">Sistema de origem<select id="hi-origem"><option value="vhsys">VHSYS</option><option value="outro">Outro sistema</option></select></label>
+        <label class="field">Arquivos<input type="file" id="hi-arq" multiple accept=".xml,.pdf,.zip"></label>
+        <label class="field check"><input type="checkbox" id="hi-espelho" checked>Gerar PDF espelho para XML sem PDF</label>
+      </div>
+      <p class="note" id="hi-info"></p>
+      <div id="hi-prev"></div>
+      <div class="controls"><button class="btn primary" type="button" id="hi-ir" hidden>Importar</button><span class="note" id="hi-prog"></span></div>
+      <div id="hi-res"></div>
+    </div></div>
     <div class="controls">
+      <select id="em-f-origem" aria-label="Origem"><option value="">Todas as origens</option><option value="notazz">Notazz</option><option value="antigas">VHSYS e outros sistemas</option></select>
       <select id="em-f-vinc" aria-label="Vínculo"><option value="sem">Sem vínculo</option><option value="com">Vinculadas</option><option value="">Todas</option></select>
       <select id="em-f-tipo" aria-label="Tipo"><option value="">NF-e e NFS-e</option><option value="nfe">NF-e</option><option value="nfs">NFS-e</option></select>
       <select id="em-f-status" aria-label="Situação na Notazz"><option value="">Todas as situações</option><option value="autoriz">Autorizadas</option><option value="cancel">Canceladas</option><option value="outras">Outras</option></select>
@@ -651,7 +665,7 @@ async function carregarTudo(primeiraVez){
     sb.from("produto_split").select("*").order("ordem"),
     sb.from("vw_recebimentos").select("*").order("data_prevista").limit(3000),
     sb.from("vw_faturamento").select("*").order("liberada_em").limit(5000),
-    sb.from("notas_externas").select("id,notazz_id,empresa_id,tipo_nf,numero,status_notazz,valor,emissao,cliente_nome,cliente_email,cliente_celular,cliente_documento,venda_ref,pdf_url,xml_url,venda_id,nota_id,vinculo,vinculado_por").order("emissao",{ascending:false}).limit(10000)
+    sb.from("notas_externas").select("id,notazz_id,origem,empresa_id,emissor_cnpj,tipo_nf,numero,chave,status_notazz,valor,emissao,cliente_nome,cliente_email,cliente_celular,cliente_documento,venda_ref,pdf_url,xml_url,xml_path,pdf_path,pdf_espelho,confere,venda_id,nota_id,vinculo,vinculado_por").order("emissao",{ascending:false}).limit(10000)
   ]);
   const erro = q.find(r=>r.error);
   if (erro){ if (/JWT|auth/i.test(erro.error.message)) { await sb.auth.signOut(); return; } toast("Erro ao carregar: "+erro.error.message); return; }
@@ -1385,9 +1399,9 @@ function renderEmit(){
   const selE=$("em-emp").value;
   $("em-emp").innerHTML=S.empresas.map(e=>`<option value="${e.id}">${esc(e.nome)}</option>`).join("");
   $("em-emp").value = selE || (empFiltro() && empFiltro()!=="sem" ? empFiltro() : (S.empresas.find(e=>e.nome.toUpperCase().includes(EMPRESA_PADRAO))||S.empresas[0]||{}).id);
-  const fv=$("em-f-vinc").value, ft=$("em-f-tipo").value, fs=$("em-f-status").value, q=semAcentoTxt($("em-q").value), qn=q.replace(/\D/g,"");
+  const fo=$("em-f-origem").value, fv=$("em-f-vinc").value, ft=$("em-f-tipo").value, fs=$("em-f-status").value, q=semAcentoTxt($("em-q").value), qn=q.replace(/\D/g,"");
   const base=(S.ext||[]).filter(passaEmpresaExt);
-  const lista=base.filter(x=>(!fv || (fv==="sem"?!x.venda_id:!!x.venda_id)) && (!ft||x.tipo_nf===ft) &&
+  const lista=base.filter(x=>(!fo || (fo==="notazz" ? (x.origem||"notazz")==="notazz" : (x.origem||"notazz")!=="notazz")) && (!fv || (fv==="sem"?!x.venda_id:!!x.venda_id)) && (!ft||x.tipo_nf===ft) &&
     (!fs || (fs==="autoriz"?/autoriz/i.test(x.status_notazz||""):fs==="cancel"?/cancel/i.test(x.status_notazz||""):!/autoriz|cancel/i.test(x.status_notazz||""))) &&
     (!q || semAcentoTxt([x.cliente_nome,x.cliente_email,x.numero].join(" ")).includes(q) || (qn.length>=3 && String(x.cliente_documento||"").includes(qn))));
   const aut=base.filter(x=>/autoriz/i.test(x.status_notazz||""));
@@ -1403,11 +1417,12 @@ function renderEmit(){
     const st=x.status_notazz||"—", cls=/autoriz/i.test(st)?"p-ok":/cancel/i.test(st)?"p-mute":/rejeit|denegad/i.test(st)?"p-bad":"p-warn";
     return `<tr data-x="${x.id}">
       <td>${x.emissao?dt(x.emissao).slice(0,8):"—"}</td><td>${esc(x.numero||"—")}</td><td>${x.tipo_nf==="nfe"?"NF-e":"NFS-e"}</td>
-      <td class="trunc">${esc(x.empresa_id?nomeEmpresa(x.empresa_id):"—")}</td>
+      <td class="trunc">${esc(x.empresa_id?nomeEmpresa(x.empresa_id):(x.emissor_cnpj?"CNPJ "+doc(x.emissor_cnpj)+" (não cadastrado)":"—"))}${(x.origem||"notazz")!=="notazz"?`<br><small class="note">${esc(x.origem==="vhsys"?"VHSYS":"Outro sistema")}</small>`:""}</td>
       <td class="trunc" title="${esc(x.cliente_email||"")}">${esc(x.cliente_nome||"—")}</td><td>${esc(doc(x.cliente_documento))}</td>
-      <td class="num"><b>${brl(x.valor)}</b></td><td><span class="pill ${cls}">${esc(st)}</span></td>
+      <td class="num"><b>${brl(x.valor)}</b></td><td><span class="pill ${cls}">${esc(st)}</span>${x.confere?' <span class="pill p-warn" title="Lido do texto do PDF: confira os dados">Conferir</span>':""}</td>
       <td>${v?`<button type="button" class="btn link" data-abrir-venda="${v.id}">${esc(v.comprador_nome||"")} · ${esc(v.produto_nome||"")}</button><br><small class="note">por ${esc(VINC[x.vinculo]||x.vinculo||"")}${x.nota_id?" · nota prevista baixada":""}</small>`:'<span class="pill p-warn">Sem vínculo</span>'}</td>
       <td class="controls">${x.pdf_url?`<a class="btn link" href="${esc(x.pdf_url)}" target="_blank" rel="noopener">PDF</a>`:""}
+        ${x.pdf_path?`<button type="button" class="btn link" data-arq="${esc(x.pdf_path)}">${x.pdf_espelho?"PDF espelho":"PDF"}</button>`:""}${x.xml_path?`<button type="button" class="btn link" data-arq="${esc(x.xml_path)}">XML</button>`:""}
         ${v?`<button type="button" class="btn link danger" data-desvinc="${x.id}">Desvincular</button>`:`<button type="button" class="btn link" data-vinc="${x.id}">Vincular</button>`}</td>
     </tr>${emAbrindo===x.id?`<tr><td colspan="10"><div class="merge-row">
       <input type="search" id="em-busca" placeholder="Buscar aluno por nome, CPF ou e-mail" value="${esc(x.cliente_documento||x.cliente_nome||"")}" style="min-width:260px">
@@ -1423,12 +1438,14 @@ function atualizarDestinos(){
     .sort((a,b)=>(b.status==="aprovada")-(a.status==="aprovada")||String(b.data_venda).localeCompare(String(a.data_venda))).slice(0,50);
   $("em-dest").innerHTML = l.length ? l.map(v=>`<option value="${v.id}">${v.tipo==="contrato"?"Contrato · ":""}${esc(v.comprador_nome||"")} · ${esc(v.produto_nome||"")} · ${brl(v.valor_bruto)} · ${dt(v.data_venda).slice(0,8)}</option>`).join("") : '<option value="">Nenhuma venda encontrada</option>';
 }
-["em-f-vinc","em-f-tipo","em-f-status"].forEach(id=>$(id).addEventListener("change",renderEmit));
+["em-f-vinc","em-f-tipo","em-f-status","em-f-origem"].forEach(id=>$(id).addEventListener("change",renderEmit));
 $("em-q").addEventListener("input",renderEmit);
 $("em-rows").addEventListener("input", e=>{ if(e.target.id==="em-busca") atualizarDestinos(); });
 $("em-rows").addEventListener("click", async e=>{
   const t=e.target;
   if (t.closest("[data-abrir-venda]")){ abrirLancamento(Number(t.closest("[data-abrir-venda]").dataset.abrirVenda)); return; }
+  if (t.dataset.arq){ const w=window.open("","_blank"); const { data, error } = await sb.storage.from("anexos").createSignedUrl(t.dataset.arq, 3600);
+    if (error){ w&&w.close(); toast("Não foi possível abrir: "+error.message); return; } if (w) w.location=data.signedUrl; else location.href=data.signedUrl; return; }
   if (t.dataset.vinc){ emAbrindo=Number(t.dataset.vinc); renderEmit(); $("em-busca")?.focus(); return; }
   if (t.hasAttribute("data-fechar-vinc")){ emAbrindo=null; renderEmit(); return; }
   if (t.dataset.confirmaVinc){
@@ -1462,6 +1479,225 @@ $("em-auto").onclick=async ()=>{
   if (error){ toast("Não foi possível: "+error.message); return; }
   toast(`${data} nota(s) vinculada(s) automaticamente`); await carregarTudo(false);
 };
+
+/* ---------- Leitura de XML e PDF de notas antigas (VHSYS e outros) ---------- */
+function xmlArvore(txt){
+  txt = String(txt).replace(/^﻿/, "");
+  const raiz = { n:"#raiz", a:{}, c:[], t:"" }, pilha=[raiz];
+  const re = /<!\[CDATA\[([\s\S]*?)\]\]>|<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<!DOCTYPE[\s\S]*?>|<\/\s*([\w:.\-]+)\s*>|<([\w:.\-]+)((?:\s+[\w:.\-]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>|([^<]+)/g;
+  let m;
+  const ent = s => s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(_,d)=>String.fromCharCode(+d)).replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCharCode(parseInt(h,16))).replace(/&amp;/g,"&");
+  while ((m = re.exec(txt))){
+    const topo = pilha[pilha.length-1];
+    if (m[1]!=null) topo.t += m[1];
+    else if (m[2]) { if (pilha.length>1) pilha.pop(); }
+    else if (m[3]) {
+      const no = { n:m[3].split(":").pop().toLowerCase(), a:{}, c:[], t:"" };
+      (m[4]||"").replace(/([\w:.\-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g, (_,k,v1,v2)=>{ no.a[k.split(":").pop()] = ent(v1??v2); });
+      topo.c.push(no); if (!m[5]) pilha.push(no);
+    }
+    else if (m[6]!=null) { const s=m[6]; if (s.trim()) topo.t += ent(s); }
+  }
+  return raiz;
+}
+function xmlTodos(no, nome, out=[]){ for (const c of no.c){ if (c.n===nome) out.push(c); xmlTodos(c, nome, out); } return out; }
+function xmlAcha(no, nomes){ if (!no) return null; for (const n of nomes){ const r=xmlTodos(no, n)[0]; if (r) return r; } return null; }
+function xmlTxt(no, nomes){ const r=xmlAcha(no, nomes); return r ? r.t.trim() : ""; }
+function xmlFilho(no, nomes){ if (!no) return ""; for (const n of nomes){ const r=no.c.find(c=>c.n===n); if (r) return r.t.trim(); } return ""; }
+const soNum = s => String(s||"").replace(/\D/g,"");
+function dataIsoBR(s){
+  s = String(s||"").trim(); if (!s) return null;
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}T${m[4]||"12"}:${m[5]||"00"}:${m[6]||"00"}${/[+-]\d{2}:\d{2}$|Z$/.test(s) && s.length>10 ? s.slice(-6).replace(/^.*Z$/,"Z") : "-03:00"}`;
+  m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}T${m[4]||"12"}:${m[5]||"00"}:00-03:00`;
+  return null;
+}
+const numBR = s => { s=String(s||"").trim(); if(!s) return null; if (/,\d{1,2}$/.test(s)) s=s.replace(/\./g,"").replace(",","."); const n=Number(s); return isNaN(n)?null:n; };
+
+function lerXmlNota(texto, arquivo){
+  const r = xmlArvore(texto);
+  // Evento de cancelamento de NF-e
+  const ev = xmlAcha(r, ["infevento"]);
+  if (ev && /110111/.test(xmlTxt(ev,["tpevento"]))) {
+    return { evento:"cancelamento", chave: soNum(xmlTxt(ev,["chnfe"])), arquivo };
+  }
+  const inf = xmlAcha(r, ["infnfe"]);
+  if (inf){ // NF-e (produto)
+    const ide=xmlAcha(inf,["ide"]), emit=xmlAcha(inf,["emit"]), dest=xmlAcha(inf,["dest"]);
+    const chave = soNum(xmlTxt(r,["chnfe"])) || soNum(inf.a.Id);
+    const cstat = xmlTxt(xmlAcha(r,["infprot"]),["cstat"]);
+    return {
+      tipo_nf:"nfe", chave, numero: xmlFilho(ide,["nnf"]).replace(/^0+/,""), serie: xmlFilho(ide,["serie"]),
+      emissao: dataIsoBR(xmlFilho(ide,["dhemi","demi"])),
+      emissor_cnpj: soNum(xmlFilho(emit,["cnpj","cpf"])), emissor_nome: xmlFilho(emit,["xnome"]),
+      cliente_documento: soNum(xmlFilho(dest,["cpf","cnpj"])), cliente_nome: xmlFilho(dest,["xnome"]), cliente_email: xmlFilho(dest,["email"]),
+      valor: numBR(xmlTxt(xmlAcha(inf,["icmstot"]),["vnf"])),
+      descricao: xmlTodos(inf,"xprod").map(x=>x.t.trim()).join("; "),
+      status: ["101","135","151","155"].includes(cstat) ? "Cancelada" : "Autorizada", arquivo
+    };
+  }
+  // NFS-e (ABRASF, Nacional, Paulistana e parecidos)
+  const cont = xmlAcha(r, ["infnfse","nfse","nfe","compnfse","retornoconsulta"]) || r;
+  const numero = (xmlFilho(xmlAcha(r,["infnfse"]),["numero","nnfse"]) || xmlTxt(cont,["nnfse","numeronfse","numeronfe","numeronota","numero"])).replace(/^0+/,"");
+  const prest = xmlAcha(cont, ["prestadorservico","prestador","emit","cpfcnpjprestador","identificacaoprestador"]);
+  const toma  = xmlAcha(cont, ["tomadorservico","tomador","toma","cpfcnpjtomador","identificacaotomador","dest"]);
+  const tomaGrande = xmlAcha(cont, ["tomadorservico","tomador","toma","dest"]) || toma;
+  const cancel = !!xmlAcha(r, ["nfsecancelamento","cancelamento","confirmacaocancelamento","infpedidocancelamento"]) || /^c$/i.test(xmlTxt(cont,["statusnfe"]));
+  return {
+    tipo_nf:"nfs", numero, codigo_verificacao: xmlTxt(cont,["codigoverificacao","codverificacao","codigoverificacaonfe"]),
+    emissao: dataIsoBR(xmlTxt(cont,["dataemissao","dhemi","dhproc","dataemissaonfe","dataemissaorps","dcompet","competencia"])),
+    emissor_cnpj: soNum(xmlTxt(prest,["cnpj","cpf"])) || soNum(xmlTxt(cont,["cnpjprestador"])),
+    emissor_nome: xmlTxt(prest,["razaosocial","xnome","nomefantasia"]) || xmlTxt(cont,["razaosocialprestador"]),
+    cliente_documento: soNum(xmlTxt(toma,["cpf","cnpj"])),
+    cliente_nome: xmlTxt(tomaGrande,["razaosocial","xnome","nome","razaosocialtomador"]) || xmlTxt(cont,["razaosocialtomador"]),
+    cliente_email: xmlTxt(tomaGrande,["email","emailtomador"]) || xmlTxt(cont,["emailtomador"]),
+    valor: numBR(xmlTxt(cont,["valorservicos","vserv","valorservico","valorliquidonfse","vliq","valortotal","vnf"])),
+    descricao: xmlTxt(cont,["discriminacao","xdescserv","descricao"]),
+    status: cancel ? "Cancelada" : "Autorizada", arquivo
+  };
+}
+
+// Lê o texto de um PDF de nota (quando não há XML). Tudo é conferido depois.
+function lerTextoPdfNota(texto, cnpjsEmpresas, arquivo){
+  const t = String(texto||"").replace(/\s+/g," ");
+  const docs = [...t.matchAll(/\b(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})\b/g)].map(m=>soNum(m[1]));
+  const emissor = docs.find(d=>cnpjsEmpresas.includes(d)) || docs.find(d=>d.length===14) || "";
+  const cliente = docs.find(d=>d!==emissor) || "";
+  const tipo = /DANFE|NF-e|NOTA FISCAL ELETR[ÔO]NICA\b(?! DE SERVI)/i.test(t) && !/SERVI[ÇC]OS?\s+ELETR/i.test(t) ? "nfe" : "nfs";
+  const chave = ((t.replace(/[\s.]/g,"").match(/\d{44}/)||[])[0]) || "";
+  const numBruto = ((t.match(/N[úu]mero\s*(?:da\s*)?(?:Nota|NFS-?e|NF-?e)?\s*[:\-]?\s*([\d.]{1,13})/i) || t.match(/N[ºo°]\.?\s*([\d.]{1,13})/i) || [])[1]) || "";
+  const numero = chave ? String(Number(chave.slice(25,34))) : numBruto.replace(/\D/g,"").replace(/^0+/,"");
+  const valor = numBR(((t.match(/Valor\s*(?:Total|L[íi]quido|dos\s*Servi[çc]os|da\s*Nota)[^\d]{0,40}([\d.]+,\d{2})/i) || t.match(/R\$\s*([\d.]+,\d{2})/) || [])[1]));
+  const data = dataIsoBR(((t.match(/(\d{2}\/\d{2}\/\d{4})/)||[])[1]));
+  return { tipo_nf:tipo, numero, chave, emissao:data, emissor_cnpj:emissor, cliente_documento:cliente, cliente_nome:"", cliente_email:"",
+           valor, descricao:"", status: /CANCELAD/i.test(t) ? "Cancelada" : "Autorizada", arquivo, confere:true };
+}
+
+function identNota(n){
+  if (n.tipo_nf==="nfe" && n.chave && n.chave.length===44) return "nfe:"+n.chave;
+  return `${n.confere?"pdf":"nfs"}:${n.emissor_cnpj||"?"}:${n.tipo_nf}:${n.numero||("arq-"+(n.arquivo||"").toLowerCase())}`;
+}
+
+
+function carregarScript(url, teste){ if (teste()) return Promise.resolve(); return new Promise((ok,erro)=>{ const s=document.createElement("script"); s.src=url; s.onload=ok; s.onerror=()=>erro(new Error("Não foi possível carregar "+url)); document.head.appendChild(s); }); }
+const libZip = ()=>carregarScript("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js", ()=>window.JSZip);
+const libPdf = async ()=>{ await carregarScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js", ()=>window.pdfjsLib); window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js"; };
+const libJsPdf = ()=>carregarScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js", ()=>window.jspdf);
+async function textoDoPdf(blob){
+  await libPdf(); const pdf=await window.pdfjsLib.getDocument({data:await blob.arrayBuffer()}).promise; let t="";
+  for (let i=1;i<=Math.min(pdf.numPages,2);i++){ const c=await (await pdf.getPage(i)).getTextContent(); t+=" "+c.items.map(x=>x.str).join(" "); }
+  return t;
+}
+async function gerarEspelho(n){
+  await libJsPdf(); const d=new window.jspdf.jsPDF({unit:"mm",format:"a4"}); let y=16; const L=(txt,tam=10,neg=false)=>{ d.setFont("helvetica",neg?"bold":"normal"); d.setFontSize(tam); d.splitTextToSize(String(txt||""),180).forEach(l=>{ if(y>280){ d.addPage(); y=16; } d.text(l,15,y); y+=tam*0.5; }); y+=1.5; };
+  const emp=S.empresas.find(e=>e.cnpj===n.emissor_cnpj);
+  L("ESPELHO DE NOTA FISCAL",15,true); L("Gerado a partir do XML da nota. Não substitui o documento oficial (DANFE / NFS-e).",8);
+  y+=2; L(`${n.tipo_nf==="nfe"?"NF-e (produto)":"NFS-e (serviço)"} nº ${n.numero||"—"}${n.serie?" · série "+n.serie:""}`,12,true);
+  L(`Emissão: ${n.emissao?new Date(n.emissao).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"}):"—"}    Situação: ${n.status}`);
+  if (n.chave) L(`Chave de acesso: ${n.chave.replace(/(\d{4})/g,"$1 ").trim()}`); if (n.codigo_verificacao) L(`Código de verificação: ${n.codigo_verificacao}`);
+  y+=2; L("EMITENTE",9,true); L(`${(emp&&emp.nome)||n.emissor_nome||""}`); L(`CNPJ: ${doc(n.emissor_cnpj)}`);
+  y+=2; L("DESTINATÁRIO / TOMADOR",9,true); L(n.cliente_nome||"—"); L(`CPF/CNPJ: ${doc(n.cliente_documento)}${n.cliente_email?"    E-mail: "+n.cliente_email:""}`);
+  y+=2; L("DESCRIÇÃO",9,true); L(n.descricao||"—");
+  y+=2; L(`VALOR TOTAL: ${brl(n.valor)}`,13,true);
+  y+=4; L(`Arquivo de origem: ${n.arquivo}`,7);
+  return d.output("blob");
+}
+let HI={notas:[],eventos:[],pdfs:[],problemas:[]};
+$("hi-arq").addEventListener("change", async ()=>{
+  const arqs=[...$("hi-arq").files]; $("hi-res").innerHTML=""; $("hi-ir").hidden=true; if(!arqs.length) return;
+  $("hi-info").textContent="Lendo arquivos…";
+  const itens=[];
+  try{
+    for (const f of arqs){
+      if (/\.zip$/i.test(f.name)){ await libZip(); const z=await window.JSZip.loadAsync(f);
+        for (const e of Object.values(z.files)){ if (e.dir) continue; const nome=e.name.split("/").pop();
+          if (/\.xml$/i.test(nome)) itens.push({nome, texto:await e.async("text")});
+          else if (/\.pdf$/i.test(nome)) itens.push({nome, blob:new Blob([await e.async("arraybuffer")],{type:"application/pdf"})}); } }
+      else if (/\.xml$/i.test(f.name)) itens.push({nome:f.name, texto:await f.text()});
+      else if (/\.pdf$/i.test(f.name)) itens.push({nome:f.name, blob:f});
+    }
+  }catch(err){ $("hi-info").textContent="Não foi possível ler: "+err.message; return; }
+  const notas=[], eventos=[], problemas=[], pdfs=itens.filter(i=>i.blob);
+  for (const it of itens.filter(i=>i.texto!=null)){
+    try{ const r=lerXmlNota(it.texto, it.nome);
+      if (r.evento) { eventos.push(r); continue; }
+      if (!r.numero && !r.chave) { problemas.push(`${it.nome}: não reconheci o número da nota`); continue; }
+      if (!r.emissor_cnpj) { problemas.push(`${it.nome}: não achei o CNPJ do emissor`); continue; }
+      r.xmlTexto=it.texto; notas.push(r);
+    }catch(err){ problemas.push(`${it.nome}: XML inválido`); }
+  }
+  // junta PDF ao XML pela chave ou pelo número
+  const semPar=[];
+  for (const p of pdfs){
+    const dig=p.nome.replace(/\D+/g," ").trim().split(" ").filter(Boolean);
+    const chave=dig.find(x=>x.length===44);
+    let alvo = chave ? notas.find(n=>n.chave===chave) : null;
+    if (!alvo){ const cands=notas.filter(n=>!n.pdfBlob && dig.some(x=>x.replace(/^0+/,"")===n.numero) && (!dig.some(x=>x.length===14) || dig.includes(n.emissor_cnpj))); if (cands.length===1) alvo=cands[0]; }
+    if (alvo && !alvo.pdfBlob) alvo.pdfBlob=p.blob; else semPar.push(p);
+  }
+  // PDF sem XML: lê o texto
+  const cnpjs=S.empresas.map(e=>e.cnpj).filter(Boolean);
+  let i=0;
+  for (const p of semPar){
+    $("hi-info").textContent=`Lendo PDFs sem XML… ${++i} de ${semPar.length}`;
+    try{ const r=lerTextoPdfNota(await textoDoPdf(p.blob), cnpjs, p.nome); if (!r.numero && !r.chave){ problemas.push(`${p.nome}: não consegui ler o número da nota no PDF`); continue; } r.pdfBlob=p.blob; notas.push(r); }
+    catch(err){ problemas.push(`${p.nome}: PDF não pôde ser lido`); }
+  }
+  const origem=$("hi-origem").value, existentes=new Map((S.ext||[]).map(x=>[x.notazz_id,x]));
+  notas.forEach(n=>{ n.ident=identNota(n); n.origem=origem; const ex=existentes.get(n.ident); n.jaExiste=!!ex && !!(ex.xml_path||ex.pdf_path) && !(n.pdfBlob && (!ex.pdf_path || ex.pdf_espelho)); });
+  HI={notas,eventos,pdfs,problemas};
+  const novas=notas.filter(n=>!n.jaExiste), semEmp=[...new Set(novas.filter(n=>!S.empresas.some(e=>e.cnpj===n.emissor_cnpj)).map(n=>n.emissor_cnpj+(n.emissor_nome?" · "+n.emissor_nome:"")))];
+  $("hi-info").textContent="";
+  $("hi-prev").innerHTML=`<div class="card"><b>${itens.length} arquivo(s) lido(s)</b>
+    <span>${notas.filter(n=>n.xmlTexto).length} nota(s) por XML · ${notas.filter(n=>n.xmlTexto&&n.pdfBlob).length} com PDF junto · ${notas.filter(n=>n.confere).length} lida(s) só do PDF (conferir) · ${eventos.length} cancelamento(s)</span>
+    <span>${novas.length} para importar · ${notas.length-novas.length} já estavam importadas</span>
+    ${semEmp.length?`<span class="alert">CNPJs que ainda não estão em Empresas (as notas entram mesmo assim e passam para a empresa quando você cadastrar): ${semEmp.map(esc).join(" · ")}</span>`:""}
+    ${problemas.length?`<details><summary>${problemas.length} arquivo(s) com problema</summary><ul>${problemas.slice(0,100).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>`:""}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Arquivo</th><th>Tipo</th><th>Nº</th><th>Emissão</th><th>Emissora</th><th>Cliente</th><th>CPF/CNPJ</th><th class="num">Valor</th><th>Situação</th><th>PDF</th></tr></thead><tbody>
+    ${novas.slice(0,40).map(n=>`<tr><td class="trunc" title="${esc(n.arquivo)}">${esc(n.arquivo)}</td><td>${n.tipo_nf==="nfe"?"NF-e":"NFS-e"}</td><td>${esc(n.numero)}</td><td>${n.emissao?dt(n.emissao).slice(0,8):"—"}</td>
+      <td class="trunc">${esc((S.empresas.find(e=>e.cnpj===n.emissor_cnpj)||{}).nome||doc(n.emissor_cnpj))}</td><td class="trunc">${esc(n.cliente_nome||"—")}</td><td>${esc(doc(n.cliente_documento))}</td>
+      <td class="num">${brl(n.valor)}</td><td>${esc(n.status)}${n.confere?' <span class="pill p-warn">Conferir</span>':""}</td><td>${n.pdfBlob?"Sim":($("hi-espelho").checked&&n.xmlTexto?"Espelho":"—")}</td></tr>`).join("")}
+    </tbody></table></div>${novas.length>40?`<small class="note">Mostrando 40 de ${novas.length}.</small>`:""}`;
+  $("hi-ir").hidden = !(novas.length || eventos.length);
+  $("hi-ir").textContent=`Importar ${novas.length} nota(s)${eventos.length?` e ${eventos.length} cancelamento(s)`:""}`;
+});
+$("hi-ir").addEventListener("click", async ()=>{
+  const b=$("hi-ir"); b.disabled=true;
+  const novas=HI.notas.filter(n=>!n.jaExiste), espelho=$("hi-espelho").checked, linhas=[], erros=[];
+  const limpa=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w.\-]+/g,"_").slice(0,80);
+  let feitos=0;
+  const sobe=async (path, blob, tipo)=>{ const r=await sb.storage.from("anexos").upload(path, blob, {contentType:tipo}); if (r.error && !/exists|duplicate/i.test(r.error.message)) throw r.error; return path; };
+  const trabalhar=async n=>{
+    try{
+      const base=`historico/${n.emissor_cnpj||"sem-cnpj"}/${limpa(n.ident)}-${Date.now().toString(36)}`;
+      const reg={ ident:n.ident, origem:n.origem, emissor_cnpj:n.emissor_cnpj, tipo_nf:n.tipo_nf, numero:n.numero, chave:n.chave, codigo_verificacao:n.codigo_verificacao,
+        status:n.status, valor:n.valor, emissao:n.emissao, cliente_nome:n.cliente_nome, cliente_email:n.cliente_email, cliente_documento:n.cliente_documento,
+        descricao:n.descricao, arquivo:n.arquivo, confere:!!n.confere, pdf_espelho:false };
+      if (n.xmlTexto) reg.xml_path=await sobe(base+".xml", new Blob([n.xmlTexto],{type:"application/xml"}), "application/xml");
+      if (n.pdfBlob) reg.pdf_path=await sobe(base+".pdf", n.pdfBlob, "application/pdf");
+      else if (espelho && n.xmlTexto){ reg.pdf_path=await sobe(base+"-espelho.pdf", await gerarEspelho(n), "application/pdf"); reg.pdf_espelho=true; }
+      linhas.push(reg);
+    }catch(err){ erros.push(`${n.arquivo}: ${err.message||err}`); }
+    $("hi-prog").textContent=`Enviando arquivos… ${++feitos} de ${novas.length}`;
+  };
+  const fila=[...novas]; await Promise.all(Array.from({length:4}, async ()=>{ while(fila.length) await trabalhar(fila.shift()); }));
+  const todas=[...linhas, ...HI.eventos]; const cont={};
+  for (let i=0;i<todas.length;i+=200){
+    $("hi-prog").textContent=`Registrando notas… ${Math.min(i+200,todas.length)} de ${todas.length}`;
+    const { data, error } = await sb.rpc("importar_notas_historico",{ p_linhas: todas.slice(i,i+200) });
+    if (error){ erros.push(`Lote ${i/200+1}: ${error.message}`); continue; }
+    data.forEach(r=>{ const k=r.situacao.startsWith("ERRO")?"erro":r.situacao.startsWith("importada")?"importada":r.situacao; cont[k]=(cont[k]||0)+1; if(k==="erro") erros.push(`${r.arquivo}: ${r.situacao.slice(6)}`); });
+  }
+  $("hi-prog").textContent="Vinculando aos alunos…";
+  const vg=await sb.rpc("vincular_notas_externas");
+  b.disabled=false; $("hi-prog").textContent=""; b.hidden=true; $("hi-arq").value=""; $("hi-prev").innerHTML="";
+  $("hi-res").innerHTML=`<div class="card"><b>Importação concluída</b>
+    <span>${cont["importada"]||0} nota(s) importada(s) · ${cont["cancelamento aplicado"]||0} cancelamento(s) aplicado(s) · ${vg.error?"—":vg.data} vinculada(s) automaticamente</span>
+    ${erros.length?`<details open><summary>${erros.length} com problema</summary><ul>${erros.slice(0,100).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>`:""}
+    <small class="note">As que ficaram sem vínculo aparecem na lista abaixo com o botão Vincular.</small></div>`;
+  await carregarTudo(false);
+});
 
 /* ================= FLUXO ================= */
 function renderFluxo(){
