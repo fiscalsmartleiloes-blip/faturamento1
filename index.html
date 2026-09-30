@@ -192,6 +192,11 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
 .chip span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .chip[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}
 .acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:0;z-index:2;background:var(--bg);padding-block:6px}
+.leitura{background:var(--info-soft);color:var(--info);border-radius:var(--r);padding:8px 14px;font-size:13px;font-weight:600}
+.matriz select{min-width:110px}
+.emp-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:4px 12px;max-height:220px;overflow:auto;padding:8px;border:1px solid var(--line);border-radius:8px}
+.emp-checks label{display:flex;gap:6px;align-items:center;font-size:12.5px}
+.senha-box{font-family:var(--font-mono);background:var(--surface-2);padding:8px 12px;border-radius:8px;user-select:all}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:99px;font-weight:600;font-size:13px;z-index:10}
 
 @media (max-width:900px){
@@ -231,6 +236,17 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
   </form>
 </section>
 
+<section class="login" id="tela-senha" hidden>
+  <form id="form-senha">
+    <div><div class="eyebrow">Primeiro acesso</div><h1>Crie sua senha</h1></div>
+    <p class="note">Sua senha provisória funcionou. Agora crie uma senha só sua, com pelo menos 8 caracteres.</p>
+    <label>Nova senha<input type="password" id="nova1" autocomplete="new-password" minlength="8" required></label>
+    <label>Repita a nova senha<input type="password" id="nova2" autocomplete="new-password" minlength="8" required></label>
+    <p class="err" id="senha-erro" aria-live="polite"></p>
+    <button class="btn primary" type="submit" id="btn-senha">Salvar senha e entrar</button>
+  </form>
+</section>
+
 <div class="app" id="tela-app" hidden>
 <aside class="side">
   <div class="brand"><div class="eyebrow">Automação</div><b>Faturamento</b></div>
@@ -247,6 +263,9 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
     <button type="button" class="sub" data-aba="config" data-sub="coprodutores" aria-current="false">Coprodutores externos</button>
     <button type="button" class="sub" data-aba="config" data-sub="regras" aria-current="false">Regras de recebimento</button>
     <button type="button" class="sub" data-aba="config" data-sub="categorias" aria-current="false">Categorias</button>
+    <div class="side-group so-master" hidden>Acessos</div>
+    <button type="button" class="sub so-master" data-aba="config" data-sub="usuarios" aria-current="false" hidden>Usuários e acessos</button>
+    <button type="button" class="sub so-master" data-aba="config" data-sub="setores" aria-current="false" hidden>Setores e permissões</button>
   </nav>
   <div class="side-foot">
     <span id="usuario"></span>
@@ -257,6 +276,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
   <header class="topbar">
     <div><div class="eyebrow" id="eyebrow">Contas a receber</div><h1 id="titulo">Captação de vendas</h1></div>
   </header>
+  <div class="leitura" id="aviso-leitura" hidden>Você tem acesso só para consulta nesta tela.</div>
 
   <!-- ================= VENDAS ================= -->
   <section id="aba-vendas" class="stack">
@@ -426,6 +446,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
     <!-- empresas -->
     <section id="sub-empresas" class="panel" hidden>
       <div class="panel-head"><h2>Empresas e informações tributárias</h2>
+        <button type="button" class="btn" id="ce-nova">+ Nova empresa</button>
         <select id="ce-emp" aria-label="Empresa para editar"></select>
       </div>
       <form class="panel-body" id="ce-form"></form>
@@ -462,6 +483,39 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
     <section id="sub-categorias" class="panel" hidden>
       <div class="panel-head"><h2>Categorias (plano de contas)</h2><small>Renomeie, desative ou adicione. Categorias desativadas deixam de aparecer nas listas.</small></div>
       <div class="panel-body"><div class="cat-cols" id="cat-cols"></div></div>
+    </section>
+
+    <!-- usuários -->
+    <section id="sub-usuarios" class="stack" hidden>
+      <div class="panel">
+        <div class="panel-head"><h2>Novo acesso</h2><small>A pessoa entra com o e-mail e a senha provisória, e no primeiro acesso cria a própria senha.</small></div>
+        <form class="panel-body" id="us-novo">
+          <div class="form-grid">
+            <label class="field">Nome<input id="us-nome" required></label>
+            <label class="field">E-mail<input id="us-email" type="email" required></label>
+            <label class="field">Senha provisória<div class="cep-line"><input id="us-senha" minlength="8" required><button type="button" class="btn" id="us-gerar">Gerar</button></div></label>
+            <label class="field">Setor<select id="us-setor"></select></label>
+            <label class="field check"><input type="checkbox" id="us-master">Master (acesso total e gerencia usuários)</label>
+          </div>
+          <div class="field">Empresas que pode ver (nenhuma marcada = todas)<div class="emp-checks" id="us-emps"></div></div>
+          <div><button class="btn primary" type="submit" id="us-criar">Criar acesso</button></div>
+          <div id="us-res"></div>
+        </form>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Pessoas com acesso</h2><small id="us-count"></small></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Setor</th><th>Empresas</th><th>Master</th><th>Ativo</th><th></th></tr></thead><tbody id="us-rows"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- setores -->
+    <section id="sub-setores" class="panel" hidden>
+      <div class="panel-head"><h2>Setores e permissões</h2><small>Para cada tela: Nenhum (não aparece), Ver (só consulta) ou Editar. Vale para todas as pessoas do setor.</small></div>
+      <div class="tbl-wrap matriz"><table><thead id="st-head"></thead><tbody id="st-rows"></tbody></table></div>
+      <form class="panel-body" id="st-novo" style="flex-direction:row;flex-wrap:wrap;align-items:flex-end">
+        <label class="field">Novo setor<input id="st-nome" required placeholder="Ex.: Comercial"></label>
+        <button class="btn primary" type="submit">Adicionar setor</button>
+      </form>
     </section>
   </section>
 </main>
@@ -536,11 +590,30 @@ async function iniciar(){
   if (session) entrarApp(session); else mostrarLogin();
   sb.auth.onAuthStateChange(ev => { if (ev==="SIGNED_OUT") mostrarLogin(); });
 }
-function mostrarLogin(){ $("tela-app").hidden=true; $("tela-login").hidden=false; clearInterval(timer); $("email").focus(); }
+function mostrarLogin(){ PERFIL=null; $("tela-senha").hidden=true; $("tela-app").hidden=true; $("tela-login").hidden=false; clearInterval(timer); $("email").focus(); }
+let PERFIL=null, PERM={};
+const TELAS=[["vendas","Vendas"],["faturamento","Faturamento"],["emitidas","Notas emitidas"],["importar","Importar vendas"],["fluxo","Fluxo de recebimento"],
+  ["config_produtos","Produtos e split"],["config_empresas","Empresas e tributação"],["config_coprodutores","Coprodutores externos"],["config_regras","Regras de recebimento"],["config_categorias","Categorias"]];
+const telaDe = (aba, sub) => aba==="config" ? "config_"+sub : aba;
+const podeVer = t => PERFIL && (PERFIL.master || ["ver","editar"].includes(PERM[t]));
+const podeEditar = t => PERFIL && (PERFIL.master || PERM[t]==="editar");
 async function entrarApp(session){
-  $("tela-login").hidden=true; $("tela-app").hidden=false;
-  $("usuario").textContent = session.user.email; emailUsuario = session.user.email;
+  const { data:perfil, error } = await sb.from("perfis").select("*, setores(nome, permissoes)").eq("user_id", session.user.id).maybeSingle();
+  if (error || !perfil || !perfil.ativo){
+    await sb.auth.signOut(); mostrarLogin();
+    $("login-erro").textContent = error ? "Não foi possível verificar seu acesso: "+error.message : "Seu acesso ainda não foi liberado. Fale com o usuário Master.";
+    return;
+  }
+  PERFIL=perfil; PERM=(perfil.setores&&perfil.setores.permissoes)||{};
+  if (perfil.trocar_senha){ $("tela-login").hidden=true; $("tela-app").hidden=true; $("tela-senha").hidden=false; $("nova1").focus(); return; }
+  $("tela-senha").hidden=true; $("tela-login").hidden=true; $("tela-app").hidden=false;
+  $("usuario").textContent = `${perfil.nome||session.user.email} · ${perfil.master?"Master":(perfil.setores?perfil.setores.nome:"sem setor")}`; emailUsuario = session.user.email;
+  document.querySelectorAll(".side-nav [data-aba]").forEach(b=>{ const t=telaDe(b.dataset.aba,b.dataset.sub); if (!b.classList.contains("so-master")) b.hidden=!podeVer(t); });
+  document.querySelectorAll(".so-master").forEach(el=>el.hidden=!perfil.master);
+  document.querySelectorAll(".side-group").forEach(g=>{ if(g.classList.contains("so-master")) return; let n=g.nextElementSibling, algum=false; while(n && !n.classList.contains("side-group")){ if(!n.hidden) algum=true; n=n.nextElementSibling; } g.hidden=!algum; });
   await carregarTudo(true);
+  const primeira=[...document.querySelectorAll(".side-nav [data-aba]")].find(b=>!b.hidden);
+  if (primeira && !podeVer(telaDe(abaAtual,subAtual))){ if(primeira.dataset.sub) subAtual=primeira.dataset.sub; abrirAba(primeira.dataset.aba); }
   clearInterval(timer); timer=setInterval(()=>{ if((abaAtual==="vendas"||abaAtual==="fluxo"||abaAtual==="faturamento") && !$("lanc").open && !fatSel.size) carregarTudo(false); }, 60000);
 }
 $("form-login").addEventListener("submit", async e=>{
@@ -552,6 +625,18 @@ $("form-login").addEventListener("submit", async e=>{
   $("senha").value=""; entrarApp(data.session);
 });
 $("btn-sair").onclick = async ()=>{ await sb.auth.signOut(); mostrarLogin(); };
+$("form-senha").addEventListener("submit", async e=>{
+  e.preventDefault(); const a=$("nova1").value, b=$("nova2").value;
+  if (a.length<8){ $("senha-erro").textContent="A senha precisa ter pelo menos 8 caracteres."; return; }
+  if (a!==b){ $("senha-erro").textContent="As duas senhas não são iguais."; return; }
+  $("btn-senha").disabled=true;
+  const { error } = await sb.auth.updateUser({ password:a });
+  if (!error) await sb.rpc("marcar_senha_trocada");
+  $("btn-senha").disabled=false;
+  if (error){ $("senha-erro").textContent = /same|different/i.test(error.message) ? "Escolha uma senha diferente da provisória." : "Não foi possível salvar: "+error.message; return; }
+  $("nova1").value=""; $("nova2").value=""; toast("Senha criada");
+  const { data:{ session } } = await sb.auth.getSession(); entrarApp(session);
+});
 $("btn-atualizar").onclick = ()=>carregarTudo(false).then(()=>toast("Atualizado"));
 
 /* ---------------- dados ---------------- */
@@ -571,6 +656,8 @@ async function carregarTudo(primeiraVez){
   const erro = q.find(r=>r.error);
   if (erro){ if (/JWT|auth/i.test(erro.error.message)) { await sb.auth.signOut(); return; } toast("Erro ao carregar: "+erro.error.message); return; }
   [S.empresas,S.produtos,S.vendas,S.cats,S.coprod,S.regras,S.splits,S.receb,S.fat,S.ext] = q.map(r=>r.data);
+  const st = await sb.from("setores").select("*").order("nome"); S.setores = st.data||[];
+  if (PERFIL && PERFIL.master){ const pf = await sb.from("perfis").select("*").order("nome"); S.perfis = pf.data||[]; }
 
   await Promise.all(Object.keys(PLAT).map(async pl=>{
     const r = await sb.from("eventos_webhook").select("recebido_em").eq("plataforma",pl).order("recebido_em",{ascending:false}).limit(1);
@@ -578,10 +665,11 @@ async function carregarTudo(primeiraVez){
   }));
 
   if (primeiraVez){
-    $("f-emp").innerHTML = `<option value="">Todas as empresas</option><option value="sem">Sem empresa definida</option>` +
-      S.empresas.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join("");
+    const restritas = PERFIL && !PERFIL.master && Array.isArray(PERFIL.empresas) && PERFIL.empresas.length ? PERFIL.empresas : null;
+    $("f-emp").innerHTML = `<option value="">${restritas?"Todas as minhas empresas":"Todas as empresas"}</option>${restritas?"":`<option value="sem">Sem empresa definida</option>`}` +
+      S.empresas.filter(x=>!restritas || restritas.includes(x.id)).map(x=>`<option value="${x.id}">${esc(x.nome)}${x.ativa===false?" (inativa)":""}</option>`).join("");
     const padrao = S.empresas.find(x=>x.nome.toUpperCase().includes(EMPRESA_PADRAO));
-    $("f-emp").value = padrao ? padrao.id : "";
+    $("f-emp").value = padrao && (!restritas || restritas.includes(padrao.id)) ? padrao.id : "";
   }
   renderTudo();
 }
@@ -603,12 +691,12 @@ $("f-emp").addEventListener("change", renderTudo);
 /* ---------------- menu lateral ---------------- */
 const TITULOS = {vendas:["Contas a receber","Captação de vendas"], faturamento:["Notas fiscais","Faturamento"], emitidas:["Notas fiscais","Notas emitidas na Notazz"], importar:["Contas a receber","Importar vendas antigas"], fluxo:["Contas a receber","Fluxo de recebimento"],
   produtos:["Configuração","Produtos e split por empresa"], empresas:["Configuração","Empresas e tributação"], coprodutores:["Configuração","Coprodutores externos"],
-  regras:["Configuração","Regras de recebimento"], categorias:["Configuração","Categorias"]};
+  regras:["Configuração","Regras de recebimento"], categorias:["Configuração","Categorias"], usuarios:["Acessos","Usuários e acessos"], setores:["Acessos","Setores e permissões"]};
 document.querySelectorAll(".side-nav [data-aba]").forEach(b=>b.onclick=()=>{ if(b.dataset.sub) subAtual=b.dataset.sub; abrirAba(b.dataset.aba); });
 function abrirAba(a){
   abaAtual=a; editando=null;
   ["vendas","faturamento","emitidas","importar","fluxo","config"].forEach(x=>$("aba-"+x).hidden = x!==a);
-  ["produtos","empresas","coprodutores","regras","categorias"].forEach(x=>$("sub-"+x).hidden = x!==subAtual);
+  ["produtos","empresas","coprodutores","regras","categorias","usuarios","setores"].forEach(x=>$("sub-"+x).hidden = x!==subAtual);
   document.querySelectorAll(".side-nav [data-aba]").forEach(b=>b.setAttribute("aria-current",
     (b.dataset.aba===a && (!b.dataset.sub || b.dataset.sub===subAtual)) ? "page" : "false"));
   const [ey,ti] = TITULOS[a==="config"?subAtual:a];
@@ -616,6 +704,23 @@ function abrirAba(a){
   renderTudo();
 }
 function abrirSub(s){ subAtual=s; abrirAba("config"); }
+
+/* ---------------- modo só consulta ---------------- */
+const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-q,#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
+function aplicarLeitura(){
+  if (!PERFIL) return;
+  const tela = telaDe(abaAtual, subAtual), so = !podeEditar(tela) && !["usuarios","setores"].includes(subAtual);
+  $("aviso-leitura").hidden = !so;
+  const sec = abaAtual==="config" ? $("sub-"+subAtual) : $("aba-"+abaAtual);
+  if (sec) sec.querySelectorAll("button,input,select,textarea").forEach(el=>{ if (!el.matches(LIVRES)) { if (so) el.disabled=true; else if (el.dataset.lock) el.disabled=false; if (so) el.dataset.lock="1"; } });
+  if ($("lanc").open){
+    const soV = !podeEditar("vendas");
+    $("lanc").querySelectorAll("button,input,select,textarea").forEach(el=>{ if (soV && !el.matches(LIVRES)) el.disabled=true; });
+    $("lanc-salvar").hidden = soV;
+  }
+}
+let leituraPend=null;
+new MutationObserver(()=>{ clearTimeout(leituraPend); leituraPend=setTimeout(aplicarLeitura,30); }).observe(document.body,{childList:true,subtree:true});
 
 /* ================= VENDAS ================= */
 function noPeriodo(iso){
@@ -1422,6 +1527,8 @@ function renderConfig(){
   if (subAtual==="coprodutores") renderCfgCoprod();
   if (subAtual==="regras") renderCfgRegras();
   if (subAtual==="categorias") renderCfgCategorias();
+  if (subAtual==="usuarios") renderUsuarios();
+  if (subAtual==="setores") renderSetores();
 }
 
 /* --- produtos e split --- */
@@ -1612,7 +1719,7 @@ function renderCfgListaLeve(){ const y=$("cp-lista").scrollTop; const keep=selPr
 
 /* --- empresas --- */
 const CAMPOS_EMPRESA = [
-  ["Identificação", [["nome","Razão social","text"],["cnpj","CNPJ (só números)","text"],["nome_fantasia","Nome fantasia","text"],
+  ["Identificação", [["ativa","Empresa ativa","check"],["nome","Razão social","text"],["cnpj","CNPJ (só números)","text"],["nome_fantasia","Nome fantasia","text"],
     ["regime_tributario","Regime tributário","select",["","Simples Nacional","Lucro Presumido","Lucro Real","MEI"]],
     ["inscricao_municipal","Inscrição municipal","text"],["inscricao_estadual","Inscrição estadual","text"],
     ["uf","UF da empresa (para escolher o CFOP)","select",["","AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"]]]],
@@ -1736,6 +1843,102 @@ $("cat-cols").addEventListener("submit", async e=>{
   if (error){ toast(/duplicate|unique/i.test(error.message) ? "Essa categoria já existe." : "Não foi possível adicionar: "+error.message); return; }
   S.cats.push(data); renderCfgCategorias(); toast("Categoria adicionada");
 });
+
+/* ================= USUÁRIOS E ACESSOS ================= */
+const nomeSetor = id => (S.setores.find(s=>s.id===id)||{}).nome || "—";
+function empChecks(sel, nome){ return S.empresas.map(e=>`<label><input type="checkbox" name="${nome}" value="${e.id}" ${sel&&sel.includes(e.id)?"checked":""}>${esc(e.nome)}</label>`).join(""); }
+function gerarSenha(){ const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"; const r=new Uint32Array(10); crypto.getRandomValues(r); return Array.from(r,x=>a[x%a.length]).join(""); }
+async function chamarUsuarios(body){
+  const { data, error } = await sb.functions.invoke("usuarios",{ body });
+  if (error){ let m=error.message; try{ m=(await error.context.json()).erro||m; }catch(_){} return { erro:m }; }
+  return data;
+}
+let usEmpAberto=null;
+function renderUsuarios(){
+  if (!PERFIL || !PERFIL.master) return;
+  const setorSel=$("us-setor").value;
+  $("us-setor").innerHTML = S.setores.map(s=>`<option value="${s.id}">${esc(s.nome)}</option>`).join("");
+  if (setorSel) $("us-setor").value=setorSel;
+  if (!$("us-emps").children.length) $("us-emps").innerHTML = empChecks(null,"us-emp");
+  const l=S.perfis||[];
+  $("us-count").textContent=`${l.length} pessoa${l.length===1?"":"s"}`;
+  $("us-rows").innerHTML = l.map(p=>`<tr data-u="${p.user_id}">
+    <td><input data-f="nome" value="${esc(p.nome||"")}" aria-label="Nome"></td>
+    <td>${esc(p.email)}${p.trocar_senha?' <span class="pill p-warn" title="Ainda não criou a própria senha">1º acesso pendente</span>':""}</td>
+    <td><select data-f="setor_id" aria-label="Setor"><option value="">—</option>${S.setores.map(s=>`<option value="${s.id}" ${s.id===p.setor_id?"selected":""}>${esc(s.nome)}</option>`).join("")}</select></td>
+    <td><button type="button" class="btn link" data-emps="${p.user_id}">${p.empresas&&p.empresas.length?`${p.empresas.length} empresa${p.empresas.length===1?"":"s"}`:"Todas"}</button></td>
+    <td><input type="checkbox" data-f="master" ${p.master?"checked":""} aria-label="Master"></td>
+    <td><input type="checkbox" data-f="ativo" ${p.ativo?"checked":""} aria-label="Ativo"></td>
+    <td><button type="button" class="btn link" data-senha="${p.user_id}">Nova senha provisória</button></td></tr>
+    ${usEmpAberto===p.user_id?`<tr><td colspan="7"><div class="emp-checks">${empChecks(p.empresas,"emp-"+p.user_id)}</div>
+      <div class="controls" style="margin-top:6px"><button type="button" class="btn primary" data-salvar-emps="${p.user_id}">Salvar empresas</button><small class="note">Nenhuma marcada = todas as empresas.</small></div></td></tr>`:""}`).join("");
+}
+$("us-gerar").onclick=()=>{ $("us-senha").value=gerarSenha(); };
+$("us-novo").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const empresas=[...document.querySelectorAll('input[name="us-emp"]:checked')].map(c=>Number(c.value));
+  const senha=$("us-senha").value, email=$("us-email").value.trim();
+  $("us-criar").disabled=true;
+  const r=await chamarUsuarios({ acao:"criar", nome:$("us-nome").value.trim(), email, senha, setor_id:Number($("us-setor").value)||null, empresas, master:$("us-master").checked });
+  $("us-criar").disabled=false;
+  if (r.erro){ $("us-res").innerHTML=`<div class="alert">${esc(r.erro)}</div>`; return; }
+  $("us-res").innerHTML=`<div class="card"><b>Acesso criado.</b><span>Passe para a pessoa (por um canal seguro):</span>
+    <span>Site: <b>${esc(location.origin+location.pathname)}</b></span><span>E-mail: <b>${esc(email)}</b></span><span>Senha provisória: <span class="senha-box">${esc(senha)}</span></span>
+    <small class="note">No primeiro acesso ela vai criar a própria senha.</small></div>`;
+  e.target.reset(); document.querySelectorAll('input[name="us-emp"]').forEach(c=>c.checked=false);
+  await carregarTudo(false);
+});
+$("us-rows").addEventListener("change", async e=>{
+  const tr=e.target.closest("tr[data-u]"); const f=e.target.dataset.f; if(!tr||!f) return;
+  const val = f==="master"||f==="ativo" ? e.target.checked : f==="setor_id" ? (Number(e.target.value)||null) : e.target.value.trim();
+  const r=await chamarUsuarios({ acao:"atualizar", user_id:tr.dataset.u, [f]:val });
+  if (r.erro){ toast(r.erro); await carregarTudo(false); return; }
+  toast(f==="ativo" ? (val?"Acesso reativado":"Acesso desativado") : "Salvo"); await carregarTudo(false);
+});
+$("us-rows").addEventListener("click", async e=>{
+  const b=e.target;
+  if (b.dataset.emps){ usEmpAberto = usEmpAberto===b.dataset.emps ? null : b.dataset.emps; renderUsuarios(); return; }
+  if (b.dataset.salvarEmps){
+    const id=b.dataset.salvarEmps, empresas=[...document.querySelectorAll(`input[name="emp-${id}"]:checked`)].map(c=>Number(c.value));
+    const r=await chamarUsuarios({ acao:"atualizar", user_id:id, empresas });
+    if (r.erro){ toast(r.erro); return; } usEmpAberto=null; toast("Empresas salvas"); await carregarTudo(false); return;
+  }
+  if (b.dataset.senha){
+    if (b.dataset.ok!=="1"){ b.dataset.ok="1"; b.textContent="Confirmar nova senha"; return; }
+    const senha=gerarSenha(); const r=await chamarUsuarios({ acao:"senha", user_id:b.dataset.senha, senha });
+    if (r.erro){ toast(r.erro); return; }
+    const p=(S.perfis||[]).find(x=>x.user_id===b.dataset.senha);
+    $("us-res").innerHTML=`<div class="card"><b>Nova senha provisória para ${esc(p?p.email:"")}</b><span class="senha-box">${esc(senha)}</span><small class="note">No próximo acesso a pessoa cria a própria senha.</small></div>`;
+    $("us-res").scrollIntoView({behavior:"smooth",block:"center"}); await carregarTudo(false);
+  }
+});
+
+/* ================= SETORES E PERMISSÕES ================= */
+function renderSetores(){
+  if (!PERFIL || !PERFIL.master) return;
+  $("st-head").innerHTML = `<tr><th>Tela</th>${S.setores.map(s=>`<th>${esc(s.nome)}</th>`).join("")}</tr>`;
+  $("st-rows").innerHTML = TELAS.map(([t,label])=>`<tr><td>${label}</td>${S.setores.map(s=>{ const v=(s.permissoes||{})[t]||"nenhum";
+    return `<td><select data-setor="${s.id}" data-tela="${t}" aria-label="${label} para ${esc(s.nome)}">${["nenhum","ver","editar"].map(o=>`<option value="${o}" ${o===v?"selected":""}>${{nenhum:"Nenhum",ver:"Ver",editar:"Editar"}[o]}</option>`).join("")}</select></td>`; }).join("")}</tr>`).join("");
+}
+$("st-rows").addEventListener("change", async e=>{
+  const sel=e.target.closest("select[data-setor]"); if(!sel) return;
+  const s=S.setores.find(x=>x.id===Number(sel.dataset.setor)); const perm={...(s.permissoes||{}), [sel.dataset.tela]:sel.value};
+  if (await salvar("setores", s.id, {permissoes:perm}, "Permissão salva")) s.permissoes=perm;
+});
+$("st-novo").addEventListener("submit", async e=>{
+  e.preventDefault(); const nome=$("st-nome").value.trim(); if(!nome) return;
+  const { error } = await sb.from("setores").insert({ nome, permissoes:Object.fromEntries(TELAS.map(([t])=>[t,"ver"])) });
+  if (error){ toast(/duplicate|unique/i.test(error.message)?"Já existe um setor com esse nome":"Não foi possível: "+error.message); return; }
+  e.target.reset(); toast("Setor criado (começa com Ver em todas as telas)"); await carregarTudo(false);
+});
+
+/* ================= NOVA EMPRESA ================= */
+$("ce-nova").onclick=async ()=>{
+  const { data, error } = await sb.from("empresas").insert({ nome:"Nova empresa (preencha)", ativa:true }).select().single();
+  if (error){ toast("Não foi possível criar: "+error.message); return; }
+  await carregarTudo(false); $("ce-emp").value=data.id; renderCfgEmpresas(); toast("Empresa criada. Preencha os dados e salve.");
+  const f=$("ce-form").elements.nome; if (f){ f.focus(); f.select(); }
+};
 
 iniciar();
 </script>
