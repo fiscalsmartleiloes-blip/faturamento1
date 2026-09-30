@@ -252,8 +252,7 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
   <div class="brand"><div class="eyebrow">Automação</div><b>Faturamento</b></div>
   <label class="side-field">Empresa<select id="f-emp"></select></label>
   <nav class="side-nav" aria-label="Menu">
-    <button type="button" data-aba="vendas" aria-current="page">Vendas</button>
-    <button type="button" data-aba="ofertas" aria-current="false">Ofertas a destinar<span class="badge" id="badge-ofertas" hidden></span></button>
+    <button type="button" data-aba="vendas" aria-current="page">Vendas<span class="badge" id="badge-vendas" hidden title="Vendas sem produto identificado"></span></button>
     <button type="button" data-aba="alunos" aria-current="false">Alunos</button>
     <button type="button" data-aba="faturamento" aria-current="false">Faturamento<span class="badge" id="badge-fat" hidden></span></button>
     <button type="button" data-aba="emitidas" aria-current="false">Notas emitidas<span class="badge" id="badge-emit" hidden></span></button>
@@ -299,16 +298,18 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
         <option value="tudo">Todo o período</option><option value="hoje">Hoje</option>
         <option value="7">Últimos 7 dias</option><option value="mes">Este mês</option><option value="mespassado">Mês passado</option>
       </select>
+      <select id="f-prod" aria-label="Produto"><option value="">Todos os produtos</option><option value="sem">Sem produto identificado</option></select>
       <input type="search" id="f-q" placeholder="Buscar produto, comprador, CPF ou transação" aria-label="Buscar">
     </div>
     <div class="alert" id="alerta-produtos" hidden></div>
     <section class="sources" id="sources" aria-label="Plataformas"></section>
     <section class="totals" id="totals" aria-label="Totais"></section>
+    <div id="vs-lote"></div>
     <div class="panel">
       <div class="panel-head"><h2>Vendas</h2><small id="count"></small></div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>Data</th><th>Plataforma</th><th>Transação</th><th>Produto</th><th>Comprador</th><th>Pagamento</th>
+          <thead><tr><th><input type="checkbox" id="vs-todas" aria-label="Selecionar todas as vendas da lista"></th><th>Data</th><th>Plataforma</th><th>Transação</th><th>Produto</th><th>Comprador</th><th>Pagamento</th>
             <th class="num">Bruto</th><th class="num">Taxa</th><th class="num">Líquido</th><th>Status</th><th>Endereço</th><th>Nota fiscal</th><th></th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
@@ -748,8 +749,8 @@ async function carregarTudo(primeiraVez){
 }
 function renderTudo(){
   const semEmpresa = S.produtos.filter(p=>!p.oferta && !p.agrupado_em && p.empresa_id==null).length;
-  const aDest = ofertasComVendasADestinar();
-  $("badge-ofertas").hidden = !aDest; $("badge-ofertas").textContent = aDest;
+  const nSem = S.vendas.filter(v=>v.tipo!=="parcela" && semProduto(v)).length;
+  $("badge-vendas").hidden = !nSem; $("badge-vendas").textContent = nSem;
   $("badge-config").hidden = !semEmpresa; $("badge-config").textContent = semEmpresa;
   if (abaAtual==="vendas") renderVendas();
   if (abaAtual==="fluxo") renderFluxo();
@@ -783,7 +784,7 @@ function abrirAba(a){
 function abrirSub(s){ subAtual=s; abrirAba("config"); }
 
 /* ---------------- modo só consulta ---------------- */
-const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-q,#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
+const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-prod,#f-q,#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
 function aplicarLeitura(){
   if (!PERFIL) return;
   const tela = telaDe(abaAtual, subAtual), so = !podeEditar(tela) && !["usuarios","setores"].includes(subAtual);
@@ -815,15 +816,16 @@ function resumoContrato(v){
   return `<span class="pill p-info">Contrato</span> ${pagas}/${Math.max(v.parcela_total||0, ps.length)} pagas`;
 }
 function vendasFiltradas(){
-  const pl=$("f-plat").value, s=$("f-status").value, q=$("f-q").value.trim().toLowerCase(), qn=q.replace(/\D/g,"");
+  const pl=$("f-plat").value, s=$("f-status").value, fp=$("f-prod").value, q=$("f-q").value.trim().toLowerCase(), qn=q.replace(/\D/g,"");
   return S.vendas.filter(v=> v.tipo!=="parcela" && passaEmpresa(v.empresa_id) && (!pl||v.plataforma===pl) && (!s||v.status===s) && noPeriodo(v.data_venda) &&
+    (!fp || (fp==="sem" ? semProduto(v) : String(v.produto_id)===fp)) &&
     (!q || [v.produto_nome,v.comprador_nome,v.comprador_email,v.id_transacao].join(" ").toLowerCase().includes(q) ||
       (qn.length>=3 && String(v.comprador_documento||"").includes(qn))));
 }
 function renderVendas(){
   const semEmpresa = S.produtos.filter(p=>!p.oferta && !p.agrupado_em && p.empresa_id==null).length;
-  const al=$("alerta-produtos"), aDest=ofertasComVendasADestinar();
-  if (aDest){ al.hidden=false; al.innerHTML=`${aDest} oferta${aDest>1?"s":""} com vendas ainda sem produto. Essas vendas não geram nota até você destinar. <button type="button" id="ir-ofertas">Destinar ofertas</button>`; $("ir-ofertas").onclick=()=>abrirAba("ofertas"); }
+  const al=$("alerta-produtos"), nSem=S.vendas.filter(v=>v.tipo!=="parcela" && passaEmpresa(v.empresa_id) && semProduto(v)).length;
+  if (nSem && $("f-prod").value!=="sem"){ al.hidden=false; al.innerHTML=`${nSem} venda${nSem>1?"s":""} sem produto identificado. Elas não geram nota até você identificar o produto. <button type="button" id="ir-sem-prod">Mostrar essas vendas</button>`; $("ir-sem-prod").onclick=()=>{ $("f-prod").value="sem"; renderVendas(); }; }
   else if (semEmpresa){ al.hidden=false; al.innerHTML=`${semEmpresa} produto${semEmpresa>1?"s":""} sem empresa definida. As vendas desses produtos só aparecem em "Sem empresa definida". <button type="button" id="ir-produtos">Configurar produtos</button>`; $("ir-produtos").onclick=()=>{ $("cp-filtro").value="sem"; abrirSub("produtos"); }; }
   else al.hidden=true;
 
@@ -837,7 +839,13 @@ function renderVendas(){
     return `<article class="src"><div class="src-head"><span class="src-name">${nome}</span><span class="live ${stale?"stale":""}">${stale?"Sem eventos recentes":"Recebendo"}</span></div><small>Último evento ${rot}</small></article>`;
   }).join("");
 
+  const fpv=$("f-prod").value, reais=produtosReais();
+  $("f-prod").innerHTML=`<option value="">Todos os produtos</option><option value="sem">Sem produto identificado</option>${reais.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join("")}`;
+  $("f-prod").value = [...$("f-prod").options].some(o=>o.value===fpv) ? fpv : "";
   const list=vendasFiltradas(), soma=(a,k)=>a.reduce((s,v)=>s+Number(v[k]||0),0);
+  [...vendaSel].forEach(id=>{ if (!list.some(v=>v.id===id)) vendaSel.delete(id); });
+  $("vs-todas").checked = list.length>0 && list.every(v=>vendaSel.has(v.id));
+  renderLoteVendas();
   const ap=list.filter(v=>v.status==="aprovada"), pend=list.filter(v=>v.status==="aguardando"),
         dev=list.filter(v=>["reembolsada","chargeback","em_disputa"].includes(v.status));
   $("totals").innerHTML = `
@@ -851,9 +859,9 @@ function renderVendas(){
   $("empty").hidden = list.length>0;
   $("empty").textContent = S.vendas.length ? "Nenhuma venda com esses filtros." : "Nenhuma venda recebida ainda. Elas aparecem aqui assim que as plataformas enviarem.";
   $("rows").innerHTML = list.map(v=>`
-    <tr class="clic ${v.id===selVenda?"sel":""}" data-id="${v.id}" tabindex="0" title="Abrir lançamento">
-      <td>${dt(v.data_venda)}</td><td>${esc(PLAT_TODAS[v.plataforma]||v.plataforma)}</td><td class="id">${esc(v.id_transacao)}</td>
-      <td class="trunc" title="${esc(v.produto_nome)}">${ehOfertaSolta(v.produto_id)?'<span class="pill p-warn">A destinar</span> ':""}${esc(v.produto_nome)}</td><td class="trunc" title="${esc(v.comprador_nome)}">${esc(v.comprador_nome)}</td>
+    <tr class="clic ${v.id===selVenda||vendaSel.has(v.id)?"sel":""}" data-id="${v.id}" tabindex="0" title="Abrir lançamento">
+      <td><input type="checkbox" data-vsel="${v.id}" ${vendaSel.has(v.id)?"checked":""} aria-label="Selecionar venda"></td><td>${dt(v.data_venda)}</td><td>${esc(PLAT_TODAS[v.plataforma]||v.plataforma)}</td><td class="id">${esc(v.id_transacao)}</td>
+      <td class="trunc" title="${esc(v.produto_nome)}">${semProduto(v)?'<span class="pill p-warn">Identificar produto</span> ':""}${esc(v.produto_nome)}</td><td class="trunc" title="${esc(v.comprador_nome)}">${esc(v.comprador_nome)}</td>
       <td>${v.tipo==="contrato" ? resumoContrato(v) : esc(PAGTO[v.forma_pagamento]||"—")+(v.parcela_num?` · parc. ${v.parcela_num}${v.parcela_total?"/"+v.parcela_total:""}`:(v.parcelas>1?` ${v.parcelas}x`:""))}</td>
       <td class="num">${brl(v.valor_bruto)}</td><td class="num">${brl(v.taxa_plataforma)}</td><td class="num"><b>${brl(v.valor_liquido)}</b></td>
       <td>${pill(STATUS,v.status)}</td><td>${pill(ENDERECO,v.origem_endereco)}</td><td>${pill(NF_VENDA,v.status_nf)}</td>
@@ -914,7 +922,8 @@ function abrirLancamento(id){
   $("lanc-titulo").textContent = v.comprador_nome || "Lançamento";
   $("lanc-status").innerHTML = pill(STATUS,v.status)+" "+pill(ENDERECO,v.origem_endereco);
   $("lanc-edit-info").textContent = v.editado_em ? `Última edição por ${v.editado_por||"—"} em ${dt(v.editado_em)}` : "Ainda não editada";
-  const prods=S.produtos.filter(p=>(!p.agrupado_em && !p.oferta) || p.id===v.produto_id).sort((a,b)=>a.nome.localeCompare(b.nome));
+  const prods=produtosReais().concat(S.produtos.filter(p=>p.id===v.produto_id && !p.oferta && p.agrupado_em)).sort((a,b)=>a.nome.localeCompare(b.nome));
+  const vSem=semProduto(v);
   const prod=S.produtos.find(x=>x.id===v.produto_id)||{};
   const inp=(k,label,extra="")=>`<label class="field">${label}<input name="${k}" value="${esc(v[k]??"")}" ${extra}></label>`;
   const num=(k,label)=>`<label class="field">${label}<input type="number" step="0.01" name="${k}" value="${v[k]??""}"></label>`;
@@ -925,7 +934,7 @@ function abrirLancamento(id){
     <fieldset><legend>Venda</legend><div class="form-grid">
       <label class="field">Data da venda<input type="datetime-local" name="data_venda" value="${paraLocal(v.data_venda)}" required></label>
       <label class="field">Status<select name="status">${Object.entries(STATUS).map(([k,[t]])=>`<option value="${k}" ${k===v.status?"selected":""}>${t}</option>`).join("")}</select></label>
-      <label class="field full">Produto${v.tipo==="parcela"?" (segue o contrato)":""}<select name="produto_id" ${v.tipo==="parcela"?"disabled":""}>${prods.map(p=>`<option value="${p.id}" ${p.id===v.produto_id?"selected":""}>${esc(p.nome)} · ${esc(PLAT_TODAS[p.plataforma]||p.plataforma)}${p.empresa_id?" · "+esc(nomeEmpresa(p.empresa_id)):""}</option>`).join("")}</select></label>
+      <label class="field full">Produto${v.tipo==="parcela"?" (segue o contrato)":""}<select name="produto_id" ${v.tipo==="parcela"?"disabled":""}>${vSem?`<option value="" selected>— Identificar produto (veio como: ${esc(v.produto_nome||"sem nome")}) —</option>`:""}${prods.map(p=>`<option value="${p.id}" ${p.id===v.produto_id?"selected":""}>${esc(p.nome)} · ${esc(PLAT_TODAS[p.plataforma]||p.plataforma)}${p.empresa_id?" · "+esc(nomeEmpresa(p.empresa_id)):""}</option>`).join("")}</select></label>${vSem && v.produto_id && v.tipo!=="parcela"?`<label class="field check full"><input type="checkbox" name="lembrar_oferta" checked>As próximas vendas que chegarem como "${esc(v.produto_nome||"")}" também vão para o produto escolhido (e as outras vendas já recebidas com esse nome)</label>`:""}
       <label class="field">Forma de pagamento<select name="forma_pagamento">${["pix","cartao","boleto","outro"].map(k=>`<option value="${k}" ${k===v.forma_pagamento?"selected":""}>${PAGTO[k]}</option>`).join("")}</select></label>
       <label class="field">Parcelas<input type="number" min="1" step="1" name="parcelas" value="${v.parcelas??1}"></label>
       ${num("valor_bruto","Valor pago (bruto)")}${num("taxa_plataforma","Taxa da plataforma")}${num("valor_liquido","Valor líquido")}
@@ -1029,6 +1038,10 @@ $("lanc-form").addEventListener("submit", async ev=>{
   if (!f.elements.data_venda.value){ toast("Informe a data da venda"); return; }
   dados.data_venda = f.elements.data_venda.value + ":00-03:00";
   if (dados.produto_id!==v.produto_id && ehOfertaSolta(v.produto_id) && !v.produto_origem_id) dados.produto_origem_id=v.produto_id; // guarda de qual oferta veio
+  if (dados.produto_id && dados.produto_id!==v.produto_id && ehOfertaSolta(v.produto_id) && f.elements.lembrar_oferta && f.elements.lembrar_oferta.checked){
+    const r=await sb.rpc("agrupar_produto",{p_origem:v.produto_id, p_destino:dados.produto_id});
+    if (r.error){ toast("Não foi possível ligar a oferta ao produto: "+r.error.message); return; }
+  }
   if (dados.produto_id!==v.produto_id){ const np=S.produtos.find(p=>p.id===dados.produto_id); dados.produto_nome=np?np.nome:v.produto_nome; dados.empresa_id=np?np.empresa_id:v.empresa_id; }
   if (CAMPOS_VALOR.some(k=>String(dados[k]??"")!==String(v[k]??"") && !(Number(dados[k])===Number(v[k])))) dados.valores_manuais=true;
   if (CAMPOS_END.some(k=>String(dados[k]??"")!==String(v[k]??""))) dados.origem_endereco=(dados.cep&&dados.logradouro&&dados.cidade&&dados.uf)?"manual":"pendente";
@@ -1124,7 +1137,7 @@ $("lanc").addEventListener("click", async e=>{
   }
 });
 
-$("rows").addEventListener("click",e=>{const tr=e.target.closest("tr[data-id]"); if(tr) abrirLancamento(Number(tr.dataset.id));});
+$("rows").addEventListener("click",e=>{ if (e.target.closest("[data-vsel]")) return; const tr=e.target.closest("tr[data-id]"); if(tr) abrirLancamento(Number(tr.dataset.id));});
 $("rows").addEventListener("keydown",e=>{if(e.key==="Enter"){const tr=e.target.closest("tr[data-id]"); if(tr) abrirLancamento(Number(tr.dataset.id));}});
 
 /* ================= IMPORTAR CSV / EXCEL ================= */
@@ -1365,7 +1378,7 @@ $("imp-ir").addEventListener("click", async ()=>{
     <p class="note">As vendas importadas já aparecem em Vendas e no Fluxo. Produtos novos aparecem em Configuração → Produtos para você escolher a empresa.</p></div>`;
   await carregarTudo(false);
 });
-["f-plat","f-status","f-periodo"].forEach(id=>$(id).addEventListener("change",renderVendas));
+["f-plat","f-status","f-periodo","f-prod"].forEach(id=>$(id).addEventListener("change",renderVendas));
 $("f-q").addEventListener("input",renderVendas);
 
 /* ================= FATURAMENTO ================= */
@@ -1899,7 +1912,7 @@ function renderCfgProdutos(){
   const loteHtml = sel.length ? `<div class="lote-prod"><b>${sel.length} produto${sel.length===1?"":"s"} selecionado${sel.length===1?"":"s"}</b>
     <select id="lote-dest" aria-label="Produto de destino"><option value="">— Produto que fica (destino) —</option>${S.produtos.filter(p=>!p.agrupado_em && !p.oferta && !prodSel.has(p.id)).sort((a,b)=>a.nome.localeCompare(b.nome)).map(p=>`<option value="${p.id}">${esc(p.nome)} · ${esc(PLAT_TODAS[p.plataforma]||p.plataforma)}${p.empresa_id?" · "+esc(nomeEmpresa(p.empresa_id)):""}</option>`).join("")}</select>
     <div class="controls"><button type="button" class="btn primary" id="lote-juntar">Juntar no destino</button><button type="button" class="btn danger" id="lote-excluir">Excluir selecionados</button><button type="button" class="btn link" id="lote-limpar">Limpar seleção</button></div>
-    <small class="note">Excluir: produtos sem vendas são apagados. Os que têm vendas precisam de um destino, e as vendas vão para ele.</small></div>` : "";
+    <small class="note">Excluir sem escolher destino: as vendas ficam "Identificar produto". Com destino: as vendas vão para ele.</small></div>` : "";
   $("cp-lista").innerHTML = loteHtml + (html || `<div class="empty">Nenhum produto neste filtro. Crie com "+ Novo produto". O que chega das plataformas fica em "Ofertas a destinar".</div>`);
   renderEditorProduto();
 }
@@ -1911,6 +1924,7 @@ $("cp-lista").addEventListener("click", async e=>{
   if (e.target.id==="lote-juntar" || e.target.id==="lote-excluir"){
     const dest=Number($("lote-dest").value)||null, btn=e.target, juntar=btn.id==="lote-juntar";
     if (juntar && !dest){ toast("Escolha o produto de destino"); return; }
+    if (!juntar && !dest && btn.dataset.confirma!=="1"){ btn.dataset.confirma="1"; btn.textContent="Confirmar: excluir (vendas ficam sem produto)"; return; }
     if (btn.dataset.confirma!=="1"){ btn.dataset.confirma="1"; btn.textContent=juntar?"Confirmar: juntar":"Confirmar: excluir"; return; }
     btn.disabled=true; let ok=0; const erros=[];
     for (const id of [...prodSel]){
@@ -1976,8 +1990,8 @@ function renderEditorProduto(){
         <button type="button" class="btn" id="pe-juntar-btn">Juntar a este</button></div>
     </fieldset>
     <fieldset><legend>Excluir este produto</legend>
-      <p class="note">Sem vendas, ele é apagado. Com vendas, escolha para qual produto elas vão; ele deixa de aparecer e as vendas futuras com esse nome também vão para o destino.</p>
-      <div class="merge-row"><select id="pe-exc-dest" aria-label="Destino das vendas"><option value="">— Para qual produto vão as vendas —</option>${outros.map(x=>`<option value="${x.id}">${esc(x.nome)} (${esc(PLAT_TODAS[x.plataforma]||x.plataforma)})</option>`).join("")}</select>
+      <p class="note">O produto sai da lista. Se você não escolher destino, as vendas dele continuam no sistema com o nome que veio da plataforma e ficam marcadas "Identificar produto" (em Vendas você identifica uma a uma ou em lote). Se escolher um destino, as vendas vão direto para ele. Notas já emitidas não mudam.</p>
+      <div class="merge-row"><select id="pe-exc-dest" aria-label="Destino das vendas"><option value="">— Nenhum: as vendas ficam "Identificar produto" —</option>${outros.map(x=>`<option value="${x.id}">${esc(x.nome)} (${esc(PLAT_TODAS[x.plataforma]||x.plataforma)})</option>`).join("")}</select>
       <button type="button" class="btn danger" id="pe-excluir">Excluir produto</button></div>
     </fieldset>
     <div class="sim"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
@@ -2028,7 +2042,7 @@ $("cp-editor").addEventListener("click", async e=>{
     if (b.dataset.confirma!=="1"){ b.dataset.confirma="1"; b.textContent="Confirmar exclusão"; return; }
     const { data, error } = await sb.rpc("excluir_produto",{p_id:p.id,p_destino:dest});
     if (error){ b.dataset.confirma=""; b.textContent="Excluir produto"; toast(error.message); return; }
-    toast(data==="excluido"?"Produto excluído":"Produto excluído; vendas movidas para o destino");
+    toast(data==="excluido"?"Produto excluído":data==="juntado"?"Produto excluído; vendas movidas para o destino":"Produto excluído; as vendas dele ficaram \"Identificar produto\"");
     selProduto=dest; await carregarTudo(false); return;
   }
   if (e.target.id==="pe-juntar-btn"){
@@ -2199,6 +2213,39 @@ $("cp-novo").onclick=async ()=>{
   selProduto=data.id; await carregarTudo(false); toast("Produto criado. Dê um nome e configure o split.");
   const f=$("pe-nome"); if (f){ f.focus(); f.select(); }
 };
+
+/* ================= IDENTIFICAR PRODUTO NAS VENDAS ================= */
+const produtosReais = () => S.produtos.filter(p=>!p.oferta && !p.agrupado_em).sort((a,b)=>a.nome.localeCompare(b.nome));
+const semProduto = v => v.produto_id==null || ehOfertaSolta(v.produto_id);
+const vendaSel=new Set();
+function renderLoteVendas(){
+  if (!vendaSel.size){ $("vs-lote").innerHTML=""; return; }
+  const sel=S.vendas.filter(v=>vendaSel.has(v.id)), temOferta=sel.some(v=>ehOfertaSolta(v.produto_id));
+  $("vs-lote").innerHTML=`<div class="lote-prod"><b>${sel.length} venda${sel.length===1?"":"s"} selecionada${sel.length===1?"":"s"} · ${brl(sel.reduce((s,v)=>s+Number(v.valor_bruto||0),0))}</b>
+    <select id="vs-dest" aria-label="Produto"><option value="">— Escolha o produto —</option>${produtosReais().map(p=>`<option value="${p.id}">${esc(p.nome)}${p.empresa_id?" · "+esc(nomeEmpresa(p.empresa_id)):" · sem empresa"}</option>`).join("")}</select>
+    ${temOferta?`<label class="field check"><input type="checkbox" id="vs-lembrar" checked>As próximas vendas que chegarem com o mesmo nome/oferta também vão para este produto (e as outras já recebidas com esse nome)</label>`:""}
+    <div class="controls"><button type="button" class="btn primary" id="vs-aplicar">Identificar produto</button><button type="button" class="btn link" id="vs-limpar">Limpar seleção</button></div>
+    ${produtosReais().length?"":`<small class="note">Você ainda não tem produtos: crie em Configuração → Produtos e split → + Novo produto.</small>`}</div>`;
+}
+$("rows").addEventListener("change", e=>{ const c=e.target.closest("[data-vsel]"); if(!c) return; const id=Number(c.dataset.vsel); c.checked?vendaSel.add(id):vendaSel.delete(id); c.closest("tr").classList.toggle("sel",c.checked); $("vs-todas").checked=false; renderLoteVendas(); });
+$("vs-todas").addEventListener("change", e=>{ vendasFiltradas().forEach(v=>e.target.checked?vendaSel.add(v.id):vendaSel.delete(v.id)); renderVendas(); });
+$("vs-lote").addEventListener("click", async e=>{
+  const b=e.target; if (b.id==="vs-limpar"){ vendaSel.clear(); renderVendas(); return; }
+  if (b.id!=="vs-aplicar") return;
+  const dest=Number($("vs-dest").value)||null; if (!dest){ toast("Escolha o produto"); return; }
+  if (b.dataset.ok!=="1"){ b.dataset.ok="1"; b.textContent=`Confirmar: ${vendaSel.size} venda(s)`; return; }
+  b.disabled=true; const lembrar=$("vs-lembrar")&&$("vs-lembrar").checked, erros=[]; let ok=0;
+  const sel=S.vendas.filter(v=>vendaSel.has(v.id)), ofertas=new Set(), porOrigem=new Map();
+  sel.forEach(v=>{ if (v.produto_id===dest) return; const of=ehOfertaSolta(v.produto_id)?v.produto_id:null;
+    if (lembrar && of) ofertas.add(of); else { const k=of||0; if(!porOrigem.has(k)) porOrigem.set(k,[]); porOrigem.get(k).push(v.id); } });
+  for (const of of ofertas){ const r=await sb.rpc("agrupar_produto",{p_origem:of,p_destino:dest}); if (r.error) erros.push(r.error.message); else ok++; }
+  for (const [of,ids] of porOrigem){ for (let i=0;i<ids.length;i+=200){
+    const campos={produto_id:dest, editado_em:new Date().toISOString(), editado_por:emailUsuario}; if (of) campos.produto_origem_id=of;
+    const r=await sb.from("vendas").update(campos).in("id",ids.slice(i,i+200)); if (r.error) erros.push(r.error.message); else ok++; } }
+  vendaSel.clear();
+  toast(erros.length?`Parte não foi feita: ${erros[0]}`:"Produto identificado nas vendas selecionadas");
+  await carregarTudo(false);
+});
 
 /* ================= OFERTAS ================= */
 const ehOfertaSolta = id => { const p=S.produtos.find(x=>x.id===id); return !!(p && p.oferta && !p.agrupado_em); };
