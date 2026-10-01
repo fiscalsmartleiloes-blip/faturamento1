@@ -379,6 +379,7 @@ dialog.lanc .lanc-body{display:flex;flex-direction:column;align-items:stretch;fl
 <aside class="side">
   <div class="logo" aria-label="Smart Leilões"><svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#f47c20"/><g fill="#0e2748"><rect x="12" y="8.5" width="13" height="7.5" rx="2" transform="rotate(45 18.5 12.25)"/><rect x="19.8" y="17.2" width="4" height="15" rx="2" transform="rotate(-45 21.8 24.7)"/><rect x="7" y="28.5" width="14" height="4" rx="2"/></g></svg><div><b>SMART</b><span>LEILÕES</span></div></div>
   <label class="side-field">Empresa<select id="f-emp"></select></label>
+  <label class="side-field">Dados carregados<select id="f-periodo-carga" title="Quanto do histórico o site traz. Pendências antigas sempre aparecem."></select></label>
   <nav class="side-nav" aria-label="Menu">
     <button type="button" data-aba="inicio" aria-current="page"><span class="lbl"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>Início</span></button>
     <button type="button" data-aba="vendas" data-grupo="vendas concluidas importar" aria-current="false"><span class="lbl"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.5l2.3 11h10.4L21 7.5H6.6"/><circle cx="10" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg>Vendas</span><span class="badge" id="badge-vendas" hidden title="Vendas sem produto identificado"></span></button>
@@ -918,7 +919,7 @@ async function entrarApp(session){
   await carregarTudo(true);
   const primeira=[...document.querySelectorAll(".side-nav [data-aba]")].find(b=>!b.hidden);
   if (primeira && !podeVer(telaDe(abaAtual,subAtual))){ if(primeira.dataset.sub) subAtual=primeira.dataset.sub; abrirAba(primeira.dataset.aba); }
-  clearInterval(timer); timer=setInterval(()=>{ if((abaAtual==="inicio"||abaAtual==="vendas"||abaAtual==="concluidas"||abaAtual==="fluxo"||abaAtual==="faturamento") && !$("lanc").open && !fatSel.size) carregarTudo(false); }, 60000);
+  clearInterval(timer); timer=setInterval(verificarMudancas, 60000);
 }
 $("form-login").addEventListener("submit", async e=>{
   e.preventDefault();
@@ -944,38 +945,72 @@ $("form-senha").addEventListener("submit", async e=>{
 $("btn-atualizar").onclick = ()=>carregarTudo(false).then(()=>toast("Atualizado"));
 
 /* ---------------- dados ---------------- */
+let versaoDados=null, recarregando=false;
+// a cada minuto consulta só um número; recarrega apenas se algo mudou e se você não estiver no meio de uma edição
+async function verificarMudancas(){
+  if (document.hidden || recarregando) return;
+  if ($("lanc").open || $("nova-venda").open || fatSel.size || vendaSel.size) return;
+  const r = await sb.from("versao_dados").select("n").eq("id",1).maybeSingle();
+  if (r.error || !r.data) return;                 // sem o SQL 17: não recarrega sozinho (use Atualizar)
+  if (versaoDados!==null && r.data.n===versaoDados) return;
+  recarregando=true; try{ await carregarTudo(false); } finally { recarregando=false; }
+}
+document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) verificarMudancas(); });
 /* O Supabase entrega no máximo 1.000 linhas por consulta: busca em páginas até trazer tudo */
 async function buscarTodas(consulta, maximo=100000){
-  const out=[];
-  for (let de=0; de<maximo; de+=1000){
-    const r=await consulta().range(de, de+999);
-    if (r.error) return r;
-    out.push(...(r.data||[]));
-    if (!r.data || r.data.length<1000) break;
+  // 1ª página já informa o total; as demais vêm em paralelo (bem mais rápido)
+  const r0=await consulta().range(0, 999);
+  if (r0.error) return r0;
+  const out=[...(r0.data||[])];
+  if (!r0.data || r0.data.length<1000) return { data:out, error:null };
+  for (let de=1000; de<maximo; de+=5000){
+    const lotes=[]; for (let k=de; k<Math.min(de+5000,maximo); k+=1000) lotes.push(consulta().range(k, k+999));
+    const rs=await Promise.all(lotes); let fim=false;
+    for (const r of rs){ if (r.error) return r; out.push(...(r.data||[])); if (!r.data || r.data.length<1000){ fim=true; break; } }
+    if (fim) break;
   }
   return { data:out, error:null };
 }
+/* ---- período carregado (padrão: últimos 12 meses; pendências antigas sempre entram) ---- */
+const PERIODOS={"3":"Últimos 3 meses","6":"Últimos 6 meses","12":"Últimos 12 meses","24":"Últimos 24 meses","tudo":"Todo o histórico"};
+function desdeCarga(){ const m=lembrar("periodoCarga","12"); if (m==="tudo") return null; const d=new Date(); d.setMonth(d.getMonth()-Number(m)); d.setDate(1); return d.toLocaleDateString("sv-SE"); }
+const PEND_FAT="em_carencia,dados_pendentes,aguardando_autorizacao,pronta,enviada,erro,cancelar";
 async function carregarTudo(primeiraVez){
+  const desde=desdeCarga();
+  const filtro=(q,col,extra)=> desde ? q.or(`${col}.gte.${desde}${extra?","+extra:""}`) : q;
   const q = await Promise.all([
     buscarTodas(()=>sb.from("empresas").select("*").order("nome").order("id")),
     buscarTodas(()=>sb.from("produtos").select("*").order("nome").order("id")),
-    buscarTodas(()=>sb.from("vendas").select("*").order("data_venda",{ascending:false}).order("id")),
+    buscarTodas(()=>desde ? sb.from("vendas").select("*").gte("data_venda",desde).order("data_venda",{ascending:false}).order("id") : sb.from("vendas").select("*").order("data_venda",{ascending:false}).order("id")),
     buscarTodas(()=>sb.from("categorias").select("*").order("id")),
     buscarTodas(()=>sb.from("coprodutores").select("*").order("nome").order("id")),
     buscarTodas(()=>sb.from("regras_recebimento").select("*").order("plataforma").order("id")),
     buscarTodas(()=>sb.from("produto_split").select("*").order("ordem").order("id")),
-    buscarTodas(()=>sb.from("vw_recebimentos").select("*").order("data_prevista").order("id")),
-    buscarTodas(()=>sb.from("vw_faturamento").select("*").order("liberada_em").order("id")),
-    buscarTodas(()=>sb.from("notas_externas").select("id,notazz_id,origem,empresa_id,emissor_cnpj,tipo_nf,numero,chave,status_notazz,valor,emissao,cliente_nome,cliente_email,cliente_celular,cliente_documento,venda_ref,pdf_url,xml_url,xml_path,pdf_path,pdf_espelho,confere,venda_id,nota_id,vinculo,vinculado_por").order("emissao",{ascending:false}).order("id"))
+    buscarTodas(()=>filtro(sb.from("vw_recebimentos").select("*"),"data_prevista","data_pagamento.is.null").order("data_prevista").order("id")),
+    buscarTodas(()=>filtro(sb.from("vw_faturamento").select("*"),"data_venda",`situacao.in.(${PEND_FAT})`).order("liberada_em").order("id")),
+    buscarTodas(()=>filtro(sb.from("notas_externas").select("id,notazz_id,origem,empresa_id,emissor_cnpj,tipo_nf,numero,chave,status_notazz,valor,emissao,cliente_nome,cliente_email,cliente_celular,cliente_documento,venda_ref,pdf_url,xml_url,xml_path,pdf_path,pdf_espelho,confere,venda_id,nota_id,vinculo,vinculado_por"),"emissao","venda_id.is.null").order("emissao",{ascending:false}).order("id"))
   ]);
   const erro = q.find(r=>r.error);
   if (erro){ if (/JWT|auth/i.test(erro.error.message)) { await sb.auth.signOut(); return; } toast("Erro ao carregar: "+erro.error.message); return; }
   [S.empresas,S.produtos,S.vendas,S.cats,S.coprod,S.regras,S.splits,S.receb,S.fat,S.ext] = q.map(r=>r.data);
+  // vendas antigas que ainda têm algo pendente (nota, parcela, contrato, nota vinculada) também entram
+  if (desde){
+    const tem=new Set(S.vendas.map(v=>v.id)), faltam=new Set();
+    const add=id=>{ if (id!=null && !tem.has(id)) faltam.add(id); };
+    S.fat.forEach(n=>add(n.venda_id)); S.receb.forEach(r=>{ add(r.venda_id); add(r.contrato_id); }); S.ext.forEach(x=>add(x.venda_id)); S.vendas.forEach(v=>add(v.contrato_id));
+    const ids=[...faltam];
+    for (let i=0;i<ids.length;i+=300){ const r=await sb.from("vendas").select("*").in("id",ids.slice(i,i+300)); if (!r.error) S.vendas.push(...(r.data||[])); }
+    // parcelas antigas dos contratos carregados
+    const ctr=S.vendas.filter(v=>v.tipo==="contrato").map(v=>v.id), tem2=new Set(S.vendas.map(v=>v.id));
+    for (let i=0;i<ctr.length;i+=300){ const r=await sb.from("vendas").select("*").in("contrato_id",ctr.slice(i,i+300)).lt("data_venda",desde); if (!r.error) S.vendas.push(...(r.data||[]).filter(v=>!tem2.has(v.id))); }
+  }
+  S.desde=desde;
   const st = await sb.from("setores").select("*").order("nome"); S.setores = st.data||[];
   const nv = await sb.from("niveis_fidelidade").select("*").order("pontos_min"); S.niveis = nv.data||[];
   const al = podeVer("alunos") ? await buscarTodas(()=>sb.from("alunos").select("*").order("chave")) : {data:[]}; S.alunosCad = al.data||[];
   if (PERFIL && PERFIL.master){ const pf = await sb.from("perfis").select("*").order("nome"); S.perfis = pf.data||[]; }
   const asg = podeVer("assinaturas") ? await sb.from("assinaturas").select("*").order("id") : {data:[]}; S.assin = asg.data||[];
+  const vv = await sb.from("versao_dados").select("n").eq("id",1).maybeSingle(); versaoDados = vv && vv.data ? vv.data.n : null;
   const ded = await buscarTodas(()=>sb.from("venda_deducoes").select("*").order("id")); S.ded = ded.error ? [] : (ded.data||[]);
   indexar();
 
@@ -1015,6 +1050,9 @@ function renderTudo(){
   if (abaAtual==="config") renderConfig();
 }
 $("f-emp").addEventListener("change", renderTudo);
+$("f-periodo-carga").innerHTML=Object.entries(PERIODOS).map(([k,t])=>`<option value="${k}">${t}</option>`).join("");
+$("f-periodo-carga").value=lembrar("periodoCarga","12");
+$("f-periodo-carga").addEventListener("change", async e=>{ guardar("periodoCarga", e.target.value); toast("Carregando "+PERIODOS[e.target.value].toLowerCase()+"…"); await carregarTudo(false); toast("Pronto: "+PERIODOS[e.target.value].toLowerCase()); });
 
 /* ---------------- menu lateral ---------------- */
 const TITULOS = {inicio:["Smart Leilões","Início"], vendas:["Vendas","Vendas"], concluidas:["Vendas","Vendas"], conciliacao:["Notas fiscais","Notas fiscais"], assinaturas:["Recorrência","Assinaturas"], relatorios:["Gestão","Relatórios gerenciais"], faturamento:["Notas fiscais","Notas fiscais"], emitidas:["Notas fiscais","Notas fiscais"], importar:["Vendas","Vendas"], fluxo:["Contas a receber","Recebimentos"],
@@ -1199,7 +1237,7 @@ function blocoVincular(v, titulo){
 /* ---- índices por venda (notas e recebimentos) ---- */
 const IDX={fat:new Map(), rec:new Map()};
 function indexar(){
-  IDX.fat=new Map(); IDX.rec=new Map();
+  IDX.fat=new Map(); IDX.rec=new Map(); IDX.etapas=new Map();
   (S.fat||[]).forEach(n=>{ if(!IDX.fat.has(n.venda_id)) IDX.fat.set(n.venda_id,[]); IDX.fat.get(n.venda_id).push(n); });
   (S.receb||[]).forEach(r=>{ [r.venda_id, r.contrato_id].forEach(id=>{ if(id==null) return; if(!IDX.rec.has(id)) IDX.rec.set(id,[]); IDX.rec.get(id).push(r); }); });
 }
@@ -1237,7 +1275,9 @@ function etapasVenda(v){
     : {t:"Recebimento",c:"agora",d:`${R.length-abertas.length} de ${R.length} recebidas`};
   return [p1,p2,p3,p4,p5];
 }
-const passosVenda = etapasVenda;
+const etapasVendaCalc = etapasVenda;
+etapasVenda = function(v){ if (!IDX.etapas) IDX.etapas=new Map(); let e=IDX.etapas.get(v.id); if (!e || e._v!==v){ e=etapasVendaCalc(v); e._v=v; IDX.etapas.set(v.id,e); } return e; };
+const passosVenda = v => etapasVenda(v);
 function vendaConcluida(v){
   if (v.concluida_manual) return true;
   if (["cancelada","reembolsada","chargeback"].includes(v.status)) return !(IDX.fat.get(v.id)||[]).some(n=>n.situacao==="cancelar");
@@ -2953,8 +2993,8 @@ $("of-lote").addEventListener("click", async e=>{
 });
 
 /* ================= MENU: esconder, só ícones, grupos recolhíveis ================= */
-const guardar=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(_){} };
-const lembrar=(k,pad)=>{ try{ const v=localStorage.getItem(k); return v==null?pad:JSON.parse(v); }catch(_){ return pad; } };
+function guardar(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(_){} }
+function lembrar(k,pad){ try{ const v=localStorage.getItem(k); return v==null?pad:JSON.parse(v); }catch(_){ return pad; } }
 function aplicarMenu(){
   document.querySelectorAll(".side-nav [data-aba]").forEach(b=>{ if (!b.title) b.title=b.textContent.replace(/\d+$/,"").trim(); });
   $("btn-atualizar").title="Atualizar"; $("btn-sair").title="Sair";
@@ -3257,6 +3297,13 @@ $("rl-tipo").addEventListener("change", ()=>{ renderRelatoriosMenu(); $("rl-res"
 $("rl-gerar").onclick=async ()=>{
   const r=RELS.find(x=>x.id===$("rl-tipo").value); if (!r) return;
   $("rl-res").innerHTML='<p class="note">Gerando…</p>';
+  const de=$("rl-de").value||null;
+  if (S.desde && (!de || de<S.desde) && r.id!=="historico"){
+    const meses = de ? Math.ceil((Date.now()-new Date(de+"T12:00:00"))/(30.4*864e5))+1 : Infinity;
+    const op = !isFinite(meses) || meses>24 ? "tudo" : meses>12 ? "24" : "12";
+    $("rl-res").innerHTML=`<p class="note">O período pedido começa antes dos dados carregados. Carregando ${PERIODOS[op].toLowerCase()}…</p>`;
+    guardar("periodoCarga", op); $("f-periodo-carga").value=op; await carregarTudo(false);
+  }
   try{ const res=await r.gerar($("rl-de").value||null, $("rl-ate").value||null); RL={rel:r,res};
     const emp=empFiltro(), empNome= emp==="" ? "Todas as empresas" : emp==="sem" ? "Sem empresa" : nomeEmpresa(Number(emp));
     $("rl-res").innerHTML=`<div class="panel"><div class="panel-head"><div><h2>${esc(r.nome)}</h2><small>${esc(empNome)} · ${$("rl-de").value?dia($("rl-de").value):"início"} a ${$("rl-ate").value?dia($("rl-ate").value):"hoje"} · gerado em ${new Date().toLocaleString("pt-BR")}</small></div>
@@ -3319,7 +3366,7 @@ function renderAlunos(){
     <div class="main"><span>Total investido (aprovado)</span><b>${brl(todos.reduce((s,a)=>s+a.total,0))}</b></div>
     <div><span>Compraram mais de uma vez</span><b>${todos.filter(a=>a.vendas.filter(v=>v.status==="aprovada").length>1).length}</b></div>
     <div class="warn"><span>Parcelas em aberto</span><b>${brl(todos.reduce((s,a)=>s+a.aberto,0))}</b></div>`;
-  $("al-count").textContent=`${l.length} aluno${l.length===1?"":"s"}${l.length>500?" · mostrando 500":""}`;
+  $("al-count").textContent=`${l.length} aluno${l.length===1?"":"s"}${l.length>500?" · mostrando 500":""}${S.desde?" · compras desde "+dia(S.desde)+" (mude em Dados carregados)":""}`;
   $("al-empty").hidden=l.length>0;
   if (selAluno && !todos.some(a=>a.chave===selAluno)) selAluno=null;
   $("al-rows").innerHTML=l.slice(0,500).map(a=>`<tr class="clic ${a.chave===selAluno?"sel":""}" data-al="${esc(a.chave)}" tabindex="0">
