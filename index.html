@@ -965,6 +965,7 @@ async function carregarTudo(primeiraVez){
   const al = podeVer("alunos") ? await sb.from("alunos").select("*") : {data:[]}; S.alunosCad = al.data||[];
   if (PERFIL && PERFIL.master){ const pf = await sb.from("perfis").select("*").order("nome"); S.perfis = pf.data||[]; }
   const asg = podeVer("assinaturas") ? await sb.from("assinaturas").select("*").order("id") : {data:[]}; S.assin = asg.data||[];
+  const ded = await sb.from("venda_deducoes").select("*").order("id"); S.ded = ded.error ? [] : (ded.data||[]);
   indexar();
 
   await Promise.all(Object.keys(PLAT).map(async pl=>{
@@ -1260,6 +1261,44 @@ $("nv-form").addEventListener("submit", async e=>{
   abrirLancamento(data.id); mostrarParteVenda("comprador");
 });
 
+/* ---- descontos pontuais (ex.: faculdade) ---- */
+function renderDescontosVenda(v, notas){
+  const el=$("ded-card"); if (!el) return;
+  const D=(S.ded||[]).filter(d=>d.venda_id===v.id), ctr=v.tipo==="parcela"&&v.contrato_id ? (S.ded||[]).filter(d=>d.venda_id===v.contrato_id) : [];
+  const travada=(notas||[]).some(n=>["enviada","emitida","cancelar"].includes(n.status));
+  const ded=(notas||[]).filter(n=>n.etapa==="deducao");
+  const cops=S.coprod.filter(c=>c.ativo!==false);
+  el.innerHTML=`<div class="sec-title">Descontos pontuais desta venda (ex.: faculdade)</div>
+    <p class="note">Só para esta venda. Ordem do cálculo: coprodutores externos → coprodutores do grupo (ex.: TechX) → <b>estes descontos</b> → empresa principal. A parte descontada não gera nota nossa: quem emite é a faculdade.</p>
+    ${D.map(d=>{ const efetivo=ded.find(n=>n.coprodutor_id===d.coprodutor_id); return `<div class="nota"><span>${esc(d.descricao||(S.coprod.find(c=>c.id===d.coprodutor_id)||{}).nome||"Desconto")} · ${d.tipo==="percentual"?Number(d.valor).toLocaleString("pt-BR")+"% do que sobra após o grupo":"valor fixo"}</span>
+      <b>${efetivo?brl(efetivo.valor):brl(d.tipo==="valor"?d.valor:0)}</b><small>${travada?"":`<button type="button" class="btn link danger" data-ded-del="${d.id}">Remover</button>`}</small></div>`; }).join("")}
+    ${!D.length&&ctr.length?`<p class="note">Esta parcela usa o desconto do contrato, proporcional ao valor da parcela.</p>`:""}
+    ${travada?`<p class="note">Esta venda já tem nota enviada ou emitida: o split não é mais recalculado. Para mudar, cancele a nota antes.</p>`:`
+    <div class="merge-row">
+      <select id="ded-cop" aria-label="Quem recebe">${cops.length?cops.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join(""):'<option value="">Cadastre a faculdade em Cadastros → Coprodutores externos</option>'}</select>
+      <select id="ded-tipo" aria-label="Tipo" style="flex:none;min-width:0;width:auto"><option value="valor">R$</option><option value="percentual">%</option></select>
+      <input type="number" step="0.01" min="0" id="ded-valor" placeholder="Valor" style="width:120px" aria-label="Valor">
+      <button type="button" class="btn" id="ded-add">+ Adicionar desconto</button></div>`}`;
+}
+$("lanc-dir").addEventListener("click", async e=>{
+  const v=S.vendas.find(x=>x.id===editando); if (!v) return;
+  if (e.target.id==="ded-add"){
+    const cop=Number($("ded-cop").value)||null, val=Number($("ded-valor").value);
+    if (!cop){ toast("Cadastre a faculdade em Cadastros → Coprodutores externos"); return; }
+    if (!(val>0)){ toast("Informe o valor do desconto"); return; }
+    if ($("ded-tipo").value==="percentual" && val>100){ toast("A porcentagem precisa ser até 100"); return; }
+    e.target.disabled=true;
+    const { error } = await sb.from("venda_deducoes").insert({ venda_id:v.id, coprodutor_id:cop, tipo:$("ded-tipo").value, valor:val, criado_por:emailUsuario });
+    e.target.disabled=false;
+    if (error){ toast("Não foi possível: "+error.message); return; }
+    toast("Desconto aplicado. As notas previstas foram recalculadas."); await carregarTudo(false); abrirLancamento(v.id); mostrarParteVenda("venda"); return;
+  }
+  const d=e.target.closest("[data-ded-del]");
+  if (d){ if (d.dataset.ok!=="1"){ d.dataset.ok="1"; d.textContent="Confirmar"; return; }
+    const { error } = await sb.from("venda_deducoes").delete().eq("id",Number(d.dataset.dedDel)); if (error){ toast("Não foi possível: "+error.message); return; }
+    toast("Desconto removido. As notas foram recalculadas."); await carregarTudo(false); abrirLancamento(v.id); mostrarParteVenda("venda"); }
+});
+
 /* ---- parcelas previstas da venda ---- */
 function renderParcelasVenda(v){
   const el=$("parc-card"); if (!el) return;
@@ -1461,6 +1500,7 @@ function abrirLancamento(id){
     <fieldset data-pane="resumo"><legend>Observações</legend><textarea name="observacoes" rows="4" placeholder="Anotações sobre esta venda ou este aluno">${esc(v.observacoes??"")}</textarea></fieldset>`;
   $("lanc-dir").innerHTML = `
     <div data-pane="venda">${blocoContrato(v)}</div>
+    <div class="card" data-pane="venda" id="ded-card"></div>
     <div class="card" data-pane="venda" id="parc-card"></div>
     <div class="card" data-pane="venda"><div class="sec-title">Assinatura e conclusão</div>
       <div class="controls">${(()=>{ const a=assinaturaDaVenda(v); return a ? `<span class="pill p-info">Faz parte de uma assinatura (${PERIODO[a.periodicidade_meses]||a.periodicidade_meses+" meses"})</span><button type="button" class="btn link" data-ir-assin="${a.id}">Ver assinatura</button>` : `<button type="button" class="btn" id="v-assinar">Transformar em assinatura</button>`; })()}
@@ -1511,7 +1551,7 @@ async function carregarLateral(v){
   const notas=n.data||[], emp=S.empresas.find(e=>e.id===v.empresa_id);
   const libera = emp && v.status==="aprovada" ? new Date(new Date(v.data_venda).getTime()+(emp.carencia_dias??15)*864e5) : null;
   $("d-notas").innerHTML = (notas.length ? notas.map(x=>`<div class="nota">
-      <span>${esc(x.etapa==="externo" ? ((S.coprod.find(c=>c.id===x.coprodutor_id)||{}).nome||"Coprodutor externo") : nomeEmpresa(x.empresa_id))}</span><b>${brl(x.valor)}</b>
+      <span>${esc(x.etapa==="deducao" ? (x.descricao_nf||"Desconto pontual")+" (desconto pontual, nota emitida por terceiros)" : x.etapa==="externo" ? ((S.coprod.find(c=>c.id===x.coprodutor_id)||{}).nome||"Coprodutor externo") : nomeEmpresa(x.empresa_id))}</span><b>${brl(x.valor)}</b>
       <small>${esc(TIPONF[x.tipo_nf])}${x.descricao_nf?" · "+esc(x.descricao_nf):""} · ${pill(NOTA,x.status)}${x.numero_nf?" · nº "+esc(x.numero_nf):""}</small></div>`).join("")
     : `<p class="note">${v.status!=="aprovada" ? "Venda não aprovada: nenhuma nota prevista." : !v.empresa_id ? "Defina a empresa do produto para calcular as notas." : "O split fiscal deste produto ainda não foi configurado."}</p>`)
     + (libera ? `<p class="note">Liberada para emissão a partir de ${libera.toLocaleDateString("pt-BR")}.</p>`:"")
@@ -1521,6 +1561,7 @@ async function carregarLateral(v){
   $("raw").textContent = p ? JSON.stringify(p,null,2) : (v.ultimo_evento==="IMPORTACAO_CSV" ? "Venda importada por arquivo CSV." : "—");
   carregarAnexos(v.id);
   renderParcelasVenda(v);
+  renderDescontosVenda(v, notas);
   carregarHistoricoVenda(v);
 }
 async function buscarCep(){
@@ -3176,6 +3217,12 @@ const RELS=[
    const rows=produtosReais().filter(p=>passaEmpresa(p.empresa_id)).map(p=>{ const sp=S.splits.filter(s=>s.produto_id===p.id), g=vend.filter(v=>v.produto_id===p.id);
      return {prod:p.nome,emp:nomeEmpresa(p.empresa_id),cat:nomeCat(p.categoria_id),split:sp.length?sp.map(s=>`${s.etapa} ${(Number(s.percentual)*100).toFixed(2)}% ${TIPONF[s.tipo_nf]||""}`).join("; "):"SEM SPLIT",fid:Number(p.pontos_fidelidade||0),qtd:g.length,bruto:somaK(g,"valor_bruto")}; });
    return {cols:[["prod","Produto"],["emp","Empresa"],["cat","Categoria"],["split","Split"],["fid","% fidelidade","num"],["qtd","Vendas","num"],["bruto","Bruto","brl"]],rows,tot:[["Produtos",rows.length,"num"],["Sem split",rows.filter(r=>r.split==="SEM SPLIT").length,"num"]]}; }},
+ {id:"descontos", nome:"Descontos pontuais (faculdade)", desc:"Vendas com desconto pontual, para conferir e acertar com a faculdade.", gerar:(de,ate)=>{
+   const l=(S.fat||[]).filter(n=>n.etapa==="deducao" && passaEmpresaFat(n) && noPer(n.data_venda,de,ate));
+   const rows=l.map(n=>({data:n.data_venda,comp:n.comprador_nome,cpf:doc(n.comprador_documento),prod:n.produto_nome,emp:nomeEmpresa(n.venda_empresa_id),fac:n.descricao_nf,valor:n.valor}));
+   const porF=agrupar(rows,r=>r.fac||"Desconto");
+   return {cols:[["data","Data da venda","dt"],["comp","Aluno"],["cpf","CPF/CNPJ"],["prod","Produto"],["emp","Empresa"],["fac","Faculdade / destino"],["valor","Valor descontado","brl"]],rows,
+     tot:[["Vendas",rows.length,"num"],...[...porF.entries()].map(([k,g])=>[k,somaK(g,"valor"),"brl"])]}; }},
  {id:"historico", nome:"Histórico de alterações e exclusões", desc:"Quem alterou, incluiu ou excluiu o quê, com antes e depois.", tela:"historico", gerar:async (de,ate)=>{
    let q=sb.from("historico_alteracoes").select("*").order("quando",{ascending:false}).limit(5000);
    if (de) q=q.gte("quando", de+"T00:00:00-03:00"); if (ate) q=q.lte("quando", ate+"T23:59:59-03:00");
