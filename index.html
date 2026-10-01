@@ -447,6 +447,7 @@ dialog.lanc .lanc-body{display:flex;flex-direction:column;align-items:stretch;fl
         <option value="tudo">Todo o período</option><option value="hoje">Hoje</option>
         <option value="7">Últimos 7 dias</option><option value="mes">Este mês</option><option value="mespassado">Mês passado</option>
       </select>
+      <select id="f-etapa" aria-label="Etapa"></select>
       <select id="f-prod" aria-label="Produto"><option value="">Todos os produtos</option><option value="sem">Sem produto identificado</option></select>
       <input type="search" id="f-q" placeholder="Buscar produto, comprador, CPF ou transação" aria-label="Buscar">
     </div>
@@ -459,7 +460,7 @@ dialog.lanc .lanc-body{display:flex;flex-direction:column;align-items:stretch;fl
       <div class="tbl-wrap">
         <table>
           <thead><tr><th><input type="checkbox" id="vs-todas" aria-label="Selecionar todas as vendas da lista"></th><th>Data</th><th>Plataforma</th><th>Transação</th><th>Produto</th><th>Comprador</th><th>Pagamento</th>
-            <th class="num">Bruto</th><th class="num">Taxa</th><th class="num">Líquido</th><th>Status</th><th>Endereço</th><th>Nota fiscal</th><th></th></tr></thead>
+            <th class="num">Bruto</th><th class="num">Taxa</th><th class="num">Líquido</th><th>Status</th><th>Etapa</th><th>Endereço</th><th>Nota fiscal</th><th></th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
         <div class="empty" id="empty" hidden></div>
@@ -1078,7 +1079,7 @@ function abrirAba(a){
 function abrirSub(s){ subAtual=s; abrirAba("config"); }
 
 /* ---------------- modo só consulta ---------------- */
-const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-prod,#f-q,#as-q,#as-sit,[data-as],#cc-q,#cc-vinc,#cc-tipo,[data-cc],#cc-busca,#rl-tipo,#rl-de,#rl-ate,#rl-gerar,#rl-xlsx,#rl-csv,#rl-print,#bg-q,[data-bg],#menu-btn,[data-menu-modo],#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
+const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-prod,#f-etapa,#f-q,#as-q,#as-sit,[data-as],#cc-q,#cc-vinc,#cc-tipo,[data-cc],#cc-busca,#rl-tipo,#rl-de,#rl-ate,#rl-gerar,#rl-xlsx,#rl-csv,#rl-print,#bg-q,[data-bg],#menu-btn,[data-menu-modo],#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
 function aplicarLeitura(){
   if (!PERFIL) return;
   const tela = telaDe(abaAtual, subAtual), so = abaAtual!=="inicio" && !podeEditar(tela) && !(abaAtual==="config" && ["usuarios","setores"].includes(subAtual));
@@ -1113,7 +1114,7 @@ function vendasFiltradas(){
   const pl=$("f-plat").value, s=$("f-status").value, fp=$("f-prod").value, q=$("f-q").value.trim().toLowerCase(), qn=q.replace(/\D/g,"");
   const conc = abaAtual==="concluidas";
   return S.vendas.filter(v=> v.tipo!=="parcela" && passaEmpresa(v.empresa_id) && vendaConcluida(v)===conc && (!pl||v.plataforma===pl) && (!s||v.status===s) && noPeriodo(v.data_venda) &&
-    (!fp || (fp==="sem" ? semProduto(v) : String(v.produto_id)===fp)) &&
+    (!fp || (fp==="sem" ? semProduto(v) : String(v.produto_id)===fp)) && passaEtapa(v) &&
     (!q || [v.produto_nome,v.comprador_nome,v.comprador_email,v.id_transacao].join(" ").toLowerCase().includes(q) ||
       (qn.length>=3 && String(v.comprador_documento||"").includes(qn))));
 }
@@ -1134,6 +1135,7 @@ function renderVendas(){
     return `<article class="src"><div class="src-head"><span class="src-name">${nome}</span><span class="live ${stale?"stale":""}">${stale?"Sem eventos recentes":"Recebendo"}</span></div><small>Último evento ${rot}</small></article>`;
   }).join("");
 
+  montarFiltroEtapa();
   const fpv=$("f-prod").value, reais=produtosReais();
   $("f-prod").innerHTML=`<option value="">Todos os produtos</option><option value="sem">Sem produto identificado</option>${reais.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join("")}`;
   $("f-prod").value = [...$("f-prod").options].some(o=>o.value===fpv) ? fpv : "";
@@ -1161,7 +1163,7 @@ function renderVendas(){
       <td class="trunc" title="${esc(v.produto_nome)}">${semProduto(v)?'<span class="pill p-warn">Identificar produto</span> ':""}${esc(v.produto_nome)}</td><td class="trunc" title="${esc(v.comprador_nome)}">${esc(v.comprador_nome)}</td>
       <td>${v.tipo==="contrato" ? resumoContrato(v) : esc(PAGTO[v.forma_pagamento]||"—")+(v.parcela_num?` · parc. ${v.parcela_num}${v.parcela_total?"/"+v.parcela_total:""}`:(v.parcelas>1?` ${v.parcelas}x`:""))}</td>
       <td class="num">${brl(v.valor_bruto)}</td><td class="num">${brl(v.taxa_plataforma)}</td><td class="num"><b>${brl(v.valor_liquido)}</b></td>
-      <td>${pill(STATUS,v.status)}</td><td>${pill(ENDERECO,v.origem_endereco)}</td><td>${pill(NF_VENDA,v.status_nf)}</td>
+      <td>${pill(STATUS,v.status)}</td><td>${etapaPill(v)}</td><td>${pill(ENDERECO,v.origem_endereco)}</td><td>${pill(NF_VENDA,v.status_nf)}</td>
       <td>${v.observacoes?'<span class="pill p-info" title="Tem observações">Obs.</span> ':""}<span class="btn link">Abrir</span></td>
     </tr>`).join("");
 }
@@ -1278,6 +1280,24 @@ function etapasVenda(v){
 const etapasVendaCalc = etapasVenda;
 etapasVenda = function(v){ if (!IDX.etapas) IDX.etapas=new Map(); let e=IDX.etapas.get(v.id); if (!e || e._v!==v){ e=etapasVendaCalc(v); e._v=v; IDX.etapas.set(v.id,e); } return e; };
 const passosVenda = v => etapasVenda(v);
+/* ---- etapa da venda: motivo de estar em andamento ou concluída ---- */
+function motivoVenda(v){
+  if (v.concluida_manual) return {grupo:"conc", k:"manual", t:"Concluída à mão"};
+  if (["cancelada","reembolsada","chargeback"].includes(v.status)) return (IDX.fat.get(v.id)||[]).some(n=>n.situacao==="cancelar")
+    ? {grupo:"and", k:"Nota fiscal", t:"Cancelar nota"} : {grupo:"conc", k:"desfeita", t:(STATUS[v.status]||[v.status])[0]};
+  const e=etapasVenda(v), p=e.find(x=>x.c!=="feito");
+  return p ? {grupo:"and", k:p.t, t:p.t+": "+p.d} : {grupo:"conc", k:"etapas", t:"Todas as etapas"};
+}
+const ETAPA_OPC={ and:[["","Todas as etapas pendentes"],["Pagamento","Pagamento"],["Liberação da nota","Liberação da nota"],["Nota fiscal","Nota fiscal"],["Recebimento","Recebimento"]],
+  conc:[["","Todas as concluídas"],["etapas","Todas as etapas concluídas"],["desfeita","Canceladas / reembolsadas"],["manual","Concluídas à mão"]] };
+function montarFiltroEtapa(){
+  const g=abaAtual==="concluidas"?"conc":"and", sel=$("f-etapa");
+  if (sel.dataset.g!==g){ sel.dataset.g=g; sel.innerHTML=ETAPA_OPC[g].map(([k,t])=>`<option value="${k}">${t}</option>`).join(""); }
+}
+const passaEtapa = v => { const f=$("f-etapa").value; return !f || motivoVenda(v).k===f; };
+function etapaPill(v){ const m=motivoVenda(v);
+  const cls = m.grupo==="conc" ? (m.k==="desfeita"?"p-mute":"p-ok") : m.k==="Pagamento" ? "p-warn" : m.k==="Recebimento" ? "p-info" : /erro|Cancelar|Falta|Identificar/i.test(m.t) ? "p-bad" : "p-warn";
+  return `<span class="pill ${cls}" title="${esc(m.t)}">${esc(m.grupo==="conc"?m.t:m.k)}</span>`; }
 function vendaConcluida(v){
   if (v.concluida_manual) return true;
   if (["cancelada","reembolsada","chargeback"].includes(v.status)) return !(IDX.fat.get(v.id)||[]).some(n=>n.situacao==="cancelar");
@@ -1992,7 +2012,7 @@ $("imp-ir").addEventListener("click", async ()=>{
     <p class="note">As vendas importadas já aparecem em Vendas e no Fluxo. Produtos novos aparecem em Configuração → Produtos para você escolher a empresa.</p></div>`;
   await carregarTudo(false);
 });
-["f-plat","f-status","f-periodo","f-prod"].forEach(id=>$(id).addEventListener("change",renderVendas));
+["f-plat","f-status","f-periodo","f-prod","f-etapa"].forEach(id=>$(id).addEventListener("change",renderVendas));
 $("f-q").addEventListener("input",renderVendas);
 
 /* ================= FATURAMENTO ================= */
