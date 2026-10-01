@@ -944,28 +944,39 @@ $("form-senha").addEventListener("submit", async e=>{
 $("btn-atualizar").onclick = ()=>carregarTudo(false).then(()=>toast("Atualizado"));
 
 /* ---------------- dados ---------------- */
+/* O Supabase entrega no máximo 1.000 linhas por consulta: busca em páginas até trazer tudo */
+async function buscarTodas(consulta, maximo=100000){
+  const out=[];
+  for (let de=0; de<maximo; de+=1000){
+    const r=await consulta().range(de, de+999);
+    if (r.error) return r;
+    out.push(...(r.data||[]));
+    if (!r.data || r.data.length<1000) break;
+  }
+  return { data:out, error:null };
+}
 async function carregarTudo(primeiraVez){
   const q = await Promise.all([
-    sb.from("empresas").select("*").order("nome"),
-    sb.from("produtos").select("*").order("nome"),
-    sb.from("vendas").select("*").order("data_venda",{ascending:false}).limit(5000),
-    sb.from("categorias").select("*"),
-    sb.from("coprodutores").select("*").order("nome"),
-    sb.from("regras_recebimento").select("*").order("plataforma"),
-    sb.from("produto_split").select("*").order("ordem"),
-    sb.from("vw_recebimentos").select("*").order("data_prevista").limit(3000),
-    sb.from("vw_faturamento").select("*").order("liberada_em").limit(5000),
-    sb.from("notas_externas").select("id,notazz_id,origem,empresa_id,emissor_cnpj,tipo_nf,numero,chave,status_notazz,valor,emissao,cliente_nome,cliente_email,cliente_celular,cliente_documento,venda_ref,pdf_url,xml_url,xml_path,pdf_path,pdf_espelho,confere,venda_id,nota_id,vinculo,vinculado_por").order("emissao",{ascending:false}).limit(10000)
+    buscarTodas(()=>sb.from("empresas").select("*").order("nome").order("id")),
+    buscarTodas(()=>sb.from("produtos").select("*").order("nome").order("id")),
+    buscarTodas(()=>sb.from("vendas").select("*").order("data_venda",{ascending:false}).order("id")),
+    buscarTodas(()=>sb.from("categorias").select("*").order("id")),
+    buscarTodas(()=>sb.from("coprodutores").select("*").order("nome").order("id")),
+    buscarTodas(()=>sb.from("regras_recebimento").select("*").order("plataforma").order("id")),
+    buscarTodas(()=>sb.from("produto_split").select("*").order("ordem").order("id")),
+    buscarTodas(()=>sb.from("vw_recebimentos").select("*").order("data_prevista").order("id")),
+    buscarTodas(()=>sb.from("vw_faturamento").select("*").order("liberada_em").order("id")),
+    buscarTodas(()=>sb.from("notas_externas").select("id,notazz_id,origem,empresa_id,emissor_cnpj,tipo_nf,numero,chave,status_notazz,valor,emissao,cliente_nome,cliente_email,cliente_celular,cliente_documento,venda_ref,pdf_url,xml_url,xml_path,pdf_path,pdf_espelho,confere,venda_id,nota_id,vinculo,vinculado_por").order("emissao",{ascending:false}).order("id"))
   ]);
   const erro = q.find(r=>r.error);
   if (erro){ if (/JWT|auth/i.test(erro.error.message)) { await sb.auth.signOut(); return; } toast("Erro ao carregar: "+erro.error.message); return; }
   [S.empresas,S.produtos,S.vendas,S.cats,S.coprod,S.regras,S.splits,S.receb,S.fat,S.ext] = q.map(r=>r.data);
   const st = await sb.from("setores").select("*").order("nome"); S.setores = st.data||[];
   const nv = await sb.from("niveis_fidelidade").select("*").order("pontos_min"); S.niveis = nv.data||[];
-  const al = podeVer("alunos") ? await sb.from("alunos").select("*") : {data:[]}; S.alunosCad = al.data||[];
+  const al = podeVer("alunos") ? await buscarTodas(()=>sb.from("alunos").select("*").order("chave")) : {data:[]}; S.alunosCad = al.data||[];
   if (PERFIL && PERFIL.master){ const pf = await sb.from("perfis").select("*").order("nome"); S.perfis = pf.data||[]; }
   const asg = podeVer("assinaturas") ? await sb.from("assinaturas").select("*").order("id") : {data:[]}; S.assin = asg.data||[];
-  const ded = await sb.from("venda_deducoes").select("*").order("id"); S.ded = ded.error ? [] : (ded.data||[]);
+  const ded = await buscarTodas(()=>sb.from("venda_deducoes").select("*").order("id")); S.ded = ded.error ? [] : (ded.data||[]);
   indexar();
 
   await Promise.all(Object.keys(PLAT).map(async pl=>{
@@ -1103,7 +1114,7 @@ function renderVendas(){
 
   const base=S.vendas.filter(v=>v.tipo!=="parcela" && passaEmpresa(v.empresa_id)), nConc=base.filter(vendaConcluida).length;
   $("tab-n-and").textContent=(base.length-nConc)||""; $("tab-n-conc").textContent=nConc||"";
-  $("count").textContent = `${abaAtual==="concluidas"?"Concluídas · ":"Em andamento · "}${list.length} venda${list.length===1?"":"s"}${S.vendas.length>=5000?" · mostrando as 5.000 mais recentes":""}`;
+  $("count").textContent = `${abaAtual==="concluidas"?"Concluídas · ":"Em andamento · "}${list.length} venda${list.length===1?"":"s"}`;
   $("empty").hidden = list.length>0;
   $("empty").textContent = S.vendas.length ? "Nenhuma venda com esses filtros." : "Nenhuma venda recebida ainda. Elas aparecem aqui assim que as plataformas enviarem.";
   $("rows").innerHTML = list.map(v=>`
@@ -1206,7 +1217,8 @@ function etapasVenda(v){
   if (p2.c==="feito"){
     if (!F.length && semNotaPrevista) { p3={t:"Liberação da nota",c:"feito",d:"Sem nota a emitir"}; p4={t:"Nota fiscal",c:"feito",d:"Não se aplica"}; }
     else if (!F.length) p3={t:"Liberação da nota",c:"alerta",d:semProduto(v)?"Identificar produto":"Sem nota prevista"};
-    else if (tem("dados_pendentes")) p3={t:"Liberação da nota",c:"alerta",d:"Faltam dados"};
+    else if (tem("dados_pendentes")) { const dv=S.vendas.find(x=>x.id===(v.tipo==="parcela"&&v.contrato_id?v.contrato_id:v.id))||v; const f=[]; if (!dv.comprador_documento) f.push("CPF"); if (!dv.cep) f.push("CEP"); if ((dv.origem_endereco||"pendente")==="pendente") f.push("endereço");
+      p3={t:"Liberação da nota",c:"alerta",d:"Falta "+(f.join(", ")||"dado do comprador")}; }
     else if (tem("em_carencia")) { const l=F.find(n=>n.situacao==="em_carencia"); p3={t:"Liberação da nota",c:"agora",d:"Carência até "+(l&&l.liberada_em?dia(l.liberada_em):"—")}; }
     else if (tem("aguardando_autorizacao")) p3={t:"Liberação da nota",c:"agora",d:"Aguardando autorização"};
     else p3={t:"Liberação da nota",c:"feito",d:"Liberada"};
@@ -1406,7 +1418,8 @@ function passosVendaAntigo(v){
   let p3={t:"Liberação da nota",c:"",d:"—"}, p4={t:"Nota fiscal",c:"",d:"—"};
   if (p2.c==="feito"){
     if (!F.length) p3={t:"Liberação da nota",c:"alerta",d:semProduto(v)?"Identificar produto":"Sem nota prevista"};
-    else if (tem("dados_pendentes")) p3={t:"Liberação da nota",c:"alerta",d:"Faltam dados"};
+    else if (tem("dados_pendentes")) { const dv=S.vendas.find(x=>x.id===(v.tipo==="parcela"&&v.contrato_id?v.contrato_id:v.id))||v; const f=[]; if (!dv.comprador_documento) f.push("CPF"); if (!dv.cep) f.push("CEP"); if ((dv.origem_endereco||"pendente")==="pendente") f.push("endereço");
+      p3={t:"Liberação da nota",c:"alerta",d:"Falta "+(f.join(", ")||"dado do comprador")}; }
     else if (tem("em_carencia")) { const l=F.find(n=>n.situacao==="em_carencia"); p3={t:"Liberação da nota",c:"agora",d:"Carência até "+(l&&l.liberada_em?dia(l.liberada_em):"—")}; }
     else if (tem("aguardando_autorizacao")) p3={t:"Liberação da nota",c:"agora",d:"Aguardando autorização"};
     else p3={t:"Liberação da nota",c:"feito",d:"Liberada"};
@@ -2435,7 +2448,7 @@ $("fx-rows").addEventListener("change", async e=>{
   } else if (el.dataset.campo==="valor"){
     ok = await salvar("recebimentos", rid, {valor_recebido: el.value===""?null:Number(el.value)}, "Valor recebido salvo");
   }
-  if (ok){ const x=await sb.from("vw_recebimentos").select("*").order("data_prevista").limit(3000); if(!x.error){S.receb=x.data; renderFluxo();} }
+  if (ok){ const x=await buscarTodas(()=>sb.from("vw_recebimentos").select("*").order("data_prevista").order("id")); if(!x.error){S.receb=x.data; indexar(); renderFluxo();} }
 });
 
 /* ================= CONFIGURAÇÃO ================= */
@@ -3224,9 +3237,8 @@ const RELS=[
    return {cols:[["data","Data da venda","dt"],["comp","Aluno"],["cpf","CPF/CNPJ"],["prod","Produto"],["emp","Empresa"],["fac","Faculdade / destino"],["valor","Valor descontado","brl"]],rows,
      tot:[["Vendas",rows.length,"num"],...[...porF.entries()].map(([k,g])=>[k,somaK(g,"valor"),"brl"])]}; }},
  {id:"historico", nome:"Histórico de alterações e exclusões", desc:"Quem alterou, incluiu ou excluiu o quê, com antes e depois.", tela:"historico", gerar:async (de,ate)=>{
-   let q=sb.from("historico_alteracoes").select("*").order("quando",{ascending:false}).limit(5000);
-   if (de) q=q.gte("quando", de+"T00:00:00-03:00"); if (ate) q=q.lte("quando", ate+"T23:59:59-03:00");
-   const { data, error } = await q; if (error) throw new Error("Histórico indisponível: "+error.message);
+   const { data, error } = await buscarTodas(()=>{ let q=sb.from("historico_alteracoes").select("*").order("quando",{ascending:false}).order("id");
+     if (de) q=q.gte("quando", de+"T00:00:00-03:00"); if (ate) q=q.lte("quando", ate+"T23:59:59-03:00"); return q; }, 20000); if (error) throw new Error("Histórico indisponível: "+error.message);
    const TAB={vendas:"Venda",produtos:"Produto",produto_split:"Split",empresas:"Empresa",recebimentos:"Recebimento",notas_externas:"Nota emitida",alunos:"Aluno",assinaturas:"Assinatura",coprodutores:"Coprodutor",categorias:"Categoria",regras_recebimento:"Regra",perfis:"Usuário",setores:"Setor",anexos:"Anexo",niveis_fidelidade:"Nível"};
    const rows=(data||[]).map(r=>({quando:r.quando,user:r.usuario,tab:TAB[r.tabela]||r.tabela,acao:(ACAO_H[r.acao]||[r.acao])[0],reg:r.registro_id,desc:r.descricao,mud:r.acao==="alteracao"?Object.keys(r.depois||{}).map(k=>`${NOMES_CAMPO[k]||k}: ${valH(k,(r.antes||{})[k])} → ${valH(k,(r.depois||{})[k])}`).join(" | "):""}));
    return {cols:[["quando","Quando","dt"],["user","Usuário"],["tab","Onde"],["acao","Ação"],["reg","Registro"],["desc","Descrição"],["mud","O que mudou"]],rows,
