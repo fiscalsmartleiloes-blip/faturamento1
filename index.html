@@ -56,7 +56,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:1
 .side-group .lbl{display:flex;align-items:center;gap:10px}
 .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--on-navy);border-top:1px solid rgba(255,255,255,.1);padding-top:12px;overflow-wrap:anywhere}
 .side-foot div{display:flex;gap:6px}
-.wrap{max-width:1400px;width:100%;padding-inline:24px;padding-block:20px 48px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.wrap{width:100%;padding-inline:24px;padding-block:20px 48px;display:flex;flex-direction:column;gap:18px;min-width:0}
 .edit-form{display:flex;flex-direction:column;gap:14px}
 .edit-form .form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .edit-form .field{font-size:12px}
@@ -133,7 +133,7 @@ td input,td select{padding:5px 8px}
 td input[type=number]{width:100px;text-align:right}
 td input[type=date]{width:140px}
 .id{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
-.trunc{max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.trunc{max-width:clamp(160px,18vw,420px);overflow:hidden;text-overflow:ellipsis}
 .pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11.5px;font-weight:600;white-space:nowrap}
 .p-ok{background:var(--ok-soft);color:var(--ok)} .p-warn{background:var(--warn-soft);color:var(--warn)}
 .p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--info-soft);color:var(--info)}
@@ -238,7 +238,7 @@ dialog.nv::backdrop{background:rgba(10,15,30,.55)}
 .side-nav button.sub.recolhido{display:none}
 .side-group.recolhe::after{content:"▾";font-size:12px;margin-left:auto;transition:transform .15s}
 .side-group.recolhe[aria-expanded=false]::after{transform:rotate(-90deg)}
-.app.menu-oculto{grid-template-columns:0 minmax(0,1fr)}
+.app.menu-oculto{grid-template-columns:minmax(0,1fr)}
 .app.menu-oculto .side{display:none}
 .app.menu-icones{grid-template-columns:68px minmax(0,1fr)}
 .app.menu-icones .side{padding:14px 8px}
@@ -262,20 +262,32 @@ dialog.nv::backdrop{background:rgba(10,15,30,.55)}
 .cand .score{font-size:11.5px;color:var(--muted)}
 @media print{ .side,.topbar .busca,.topbar .menu-btn,.tabs,#rl-gerar,.rl-acoes,.panel:has(#rl-tipo){display:none!important} .app{grid-template-columns:1fr!important} body{background:#fff} }
 @media (max-width:900px){ .menu-btn,.tamanho-menu{display:none!important} }
+.matriz-fx td,.matriz-fx th{padding:7px 10px}
+.matriz-fx th:first-child,.matriz-fx td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;min-width:200px}
+.matriz-fx tr.grp td:first-child{background:var(--surface-2)}
+.matriz-fx th:last-child,.matriz-fx td:last-child{position:sticky;right:0;background:var(--surface);box-shadow:-1px 0 0 var(--line)}
+.matriz-fx tr.grp td:last-child{background:var(--surface-2)}
+.matriz-fx td.num{cursor:pointer}
+.matriz-fx td.num:hover{background:var(--accent-soft)}
+.matriz-fx tr.grp td{font-weight:700;background:var(--surface-2)}
+.matriz-fx tr.sub td:first-child{padding-left:26px}
+.matriz-fx tfoot td{font-weight:700;border-top:2px solid var(--line)}
+.matriz-fx td.sel{outline:2px solid var(--brand);outline-offset:-2px}
+.matriz-fx small{display:block;color:var(--muted);font-weight:400}
 /* abas do topo */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);width:100%;overflow-x:auto}
 .tabs button{border:0;background:none;padding:9px 14px;font-weight:600;font-size:13.5px;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
 .tabs button:hover{color:var(--fg)}
 .tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--brand)}
 /* início */
-.dash-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.dash-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px}
 .kpi span{font-size:12px;color:var(--muted);font-weight:600}
 .kpi b{font-size:22px;font-variant-numeric:tabular-nums;font-weight:700;line-height:1.2}
 .kpi small{font-size:12px;color:var(--muted)}
 .kpi.destaque{background:var(--navy);border-color:var(--navy);color:#fff}
 .kpi.destaque span,.kpi.destaque small{color:var(--on-navy)} .kpi.destaque b{color:var(--brand)}
-.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;padding:14px 16px}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:14px 16px}
 .pend{display:flex;flex-direction:column;gap:6px;text-align:left;border:1px solid var(--line);border-left:4px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 14px;color:var(--fg)}
 .pend:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(14,39,72,.08)}
 .pend .t{font-weight:700;font-size:13.5px}
@@ -418,14 +430,20 @@ dialog.lanc .lanc-body{display:flex;flex-direction:column;align-items:stretch;fl
   <!-- ================= VENDAS ================= -->
   <!-- ================= INÍCIO ================= -->
   <section id="aba-inicio" class="stack">
+    <div class="controls">
+      <span class="note" style="font-weight:600">Período:</span>
+      <select id="in-per" aria-label="Período"><option value="hoje">Hoje</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="mes">Este mês</option><option value="mespass">Mês passado</option><option value="tri">Este trimestre</option><option value="ano">Este ano</option><option value="pers">Personalizado</option></select>
+      <span id="in-pers" hidden><input type="date" id="in-de" aria-label="De"> até <input type="date" id="in-ate" aria-label="Até"></span>
+      <small class="note" id="in-per-txt"></small>
+    </div>
     <section class="dash-kpis" id="in-kpis" aria-label="Resumo do mês"></section>
     <div class="panel">
       <div class="panel-head"><h2>O que precisa da sua atenção</h2><small id="in-sub">Clique num cartão para abrir a lista já filtrada</small></div>
       <div class="dash-grid" id="in-pend"></div>
     </div>
     <div class="dash-2">
-      <div class="panel"><div class="panel-head"><h2>Vendas aprovadas no mês, por empresa</h2><small id="in-mes"></small></div><div class="panel-body barras" id="in-emp"></div></div>
-      <div class="panel"><div class="panel-head"><h2>Vendas aprovadas no mês, por plataforma</h2></div><div class="panel-body barras" id="in-plat"></div></div>
+      <div class="panel"><div class="panel-head"><h2>Vendas aprovadas no período, por empresa</h2><small id="in-mes"></small></div><div class="panel-body barras" id="in-emp"></div></div>
+      <div class="panel"><div class="panel-head"><h2>Vendas aprovadas no período, por plataforma</h2></div><div class="panel-body barras" id="in-plat"></div></div>
     </div>
   </section>
 
@@ -673,6 +691,16 @@ dialog.lanc .lanc-body{display:flex;flex-direction:column;align-items:stretch;fl
       <input type="search" id="fx-q" placeholder="Buscar comprador, produto ou transação" aria-label="Buscar no fluxo">
     </div>
     <section class="totals" id="fx-totals"></section>
+    <div class="panel">
+      <div class="panel-head"><h2>Recebimentos por categoria e mês</h2>
+        <div class="controls">
+          <select id="fx-linhas" aria-label="Linhas do quadro"><option value="tipo">Por tipo de recebimento</option><option value="cat">Por categoria / subcategoria</option></select>
+          <select id="fx-visao" aria-label="Valores"><option value="prev">Previsto</option><option value="rec">Recebido</option><option value="aberto">Em aberto / vencido</option><option value="comp">Previsto × recebido</option></select>
+          <button type="button" class="btn" id="fx-xlsx">Baixar Excel</button>
+        </div></div>
+      <div class="tbl-wrap"><table class="matriz-fx"><thead id="fx-mhead"></thead><tbody id="fx-mbody"></tbody><tfoot id="fx-mfoot"></tfoot></table></div>
+      <p class="note" style="padding:8px 16px">Clique num valor para filtrar a lista de parcelas abaixo por aquela linha e mês. Os filtros de cima (situação, categoria, busca) também valem para o quadro.</p>
+    </div>
     <div class="panel">
       <div class="panel-head"><h2>Parcelas a receber</h2><small id="fx-count"></small></div>
       <div class="tbl-wrap">
@@ -1024,8 +1052,7 @@ async function carregarTudo(primeiraVez){
     const restritas = PERFIL && !PERFIL.master && Array.isArray(PERFIL.empresas) && PERFIL.empresas.length ? PERFIL.empresas : null;
     $("f-emp").innerHTML = `<option value="">${restritas?"Todas as minhas empresas":"Todas as empresas"}</option>${restritas?"":`<option value="sem">Sem empresa definida</option>`}` +
       S.empresas.filter(x=>!restritas || restritas.includes(x.id)).map(x=>`<option value="${x.id}">${esc(x.nome)}${x.ativa===false?" (inativa)":""}</option>`).join("");
-    const padrao = S.empresas.find(x=>x.nome.toUpperCase().includes(EMPRESA_PADRAO));
-    $("f-emp").value = padrao && (!restritas || restritas.includes(padrao.id)) ? padrao.id : "";
+    $("f-emp").value = "";   // abre sempre no geral (todas as empresas)
   }
   renderTudo();
 }
@@ -1079,7 +1106,7 @@ function abrirAba(a){
 function abrirSub(s){ subAtual=s; abrirAba("config"); }
 
 /* ---------------- modo só consulta ---------------- */
-const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-prod,#f-etapa,#f-q,#as-q,#as-sit,[data-as],#cc-q,#cc-vinc,#cc-tipo,[data-cc],#cc-busca,#rl-tipo,#rl-de,#rl-ate,#rl-gerar,#rl-xlsx,#rl-csv,#rl-print,#bg-q,[data-bg],#menu-btn,[data-menu-modo],#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
+const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-prod,#f-etapa,#f-q,#as-q,#as-sit,[data-as],#cc-q,#cc-vinc,#cc-tipo,[data-cc],#cc-busca,#rl-tipo,#rl-de,#rl-ate,#rl-gerar,#rl-xlsx,#rl-csv,#rl-print,#bg-q,[data-bg],#in-per,#in-de,#in-ate,#fx-visao,#fx-linhas,[data-fxcel],#menu-btn,[data-menu-modo],#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
 function aplicarLeitura(){
   if (!PERFIL) return;
   const tela = telaDe(abaAtual, subAtual), so = abaAtual!=="inicio" && !podeEditar(tela) && !(abaAtual==="config" && ["usuarios","setores"].includes(subAtual));
@@ -2465,9 +2492,11 @@ function renderFluxo(){
   $("fx-cat").value=cSel; $("fx-tipo").innerHTML = optCats("tipo_recebimento", null, "Todos os tipos"); $("fx-tipo").value=tSel;
 
   const sit=$("fx-sit").value, mes=$("fx-mes").value, cat=$("fx-cat").value, tipo=$("fx-tipo").value, q=$("fx-q").value.trim().toLowerCase();
-  const list=S.receb.filter(r=> passaEmpresa(r.empresa_id) && (!sit||r.situacao===sit) && (!mes||r.data_prevista.startsWith(mes)) &&
+  const base=S.receb.filter(r=> passaEmpresa(r.empresa_id) && (!sit||r.situacao===sit) &&
     (!cat || (cat==="nc" ? r.subcategoria_id==null : String(r.subcategoria_id)===cat)) && (!tipo || String(r.tipo_recebimento_id)===tipo) &&
     (!q || [r.comprador_nome,r.produto_nome,r.id_transacao].join(" ").toLowerCase().includes(q)));
+  renderMatrizFluxo(base);
+  const list=base.filter(r=>(!mes||r.data_prevista.startsWith(mes)) && (!fxCel || fxCel.linha(r)));
   const soma=(a,k)=>a.reduce((s,r)=>s+Number(r[k]||0),0);
   const by=s=>list.filter(r=>r.situacao===s);
   $("fx-totals").innerHTML = `
@@ -2492,6 +2521,61 @@ function renderFluxo(){
       <td>${pill(SIT,r.situacao)}</td>
     </tr>`).join("");
 }
+/* ---- quadro do fluxo: categoria × mês ---- */
+let fxCel=null, FXM=null;
+function linhasFluxo(base){
+  const modo=$("fx-linhas").value, L=[];
+  if (modo==="tipo"){
+    catsDo("tipo_recebimento").forEach(t=>L.push({k:"t"+t.id, nome:t.nome, f:r=>r.tipo_recebimento_id===t.id}));
+    L.push({k:"t0", nome:"Sem tipo de recebimento", f:r=>r.tipo_recebimento_id==null});
+  } else {
+    const cats=catsDo("categoria"), subs=catsDo("subcategoria");
+    const grupos=[...cats.map(c=>({id:c.id,nome:c.nome})), {id:null,nome:"Sem categoria"}];
+    grupos.forEach(g=>{
+      const fg=r=>(r.categoria_id??null)===g.id;
+      L.push({k:"c"+(g.id??0), nome:g.nome, f:fg, grp:true});
+      const usadas=new Set(base.filter(fg).map(r=>r.subcategoria_id??null));
+      subs.filter(s=>usadas.has(s.id)).forEach(s=>L.push({k:"c"+(g.id??0)+"s"+s.id, nome:s.nome, f:r=>fg(r)&&r.subcategoria_id===s.id, sub:true}));
+      if (usadas.has(null) && usadas.size>1) L.push({k:"c"+(g.id??0)+"s0", nome:"Sem subcategoria", f:r=>fg(r)&&r.subcategoria_id==null, sub:true});
+    });
+  }
+  return L;
+}
+function valorFx(l, visao){
+  const prev=l.reduce((s,r)=>s+Number(r.valor_previsto||0),0), rec=l.filter(r=>r.situacao==="pago").reduce((s,r)=>s+Number(r.valor_recebido??r.valor_previsto),0);
+  const ab=l.filter(r=>r.situacao!=="pago").reduce((s,r)=>s+Number(r.valor_previsto||0),0);
+  return visao==="prev"?{v:prev}:visao==="rec"?{v:rec}:visao==="aberto"?{v:ab}:{v:prev,r:rec};
+}
+function renderMatrizFluxo(base){
+  const visao=$("fx-visao").value, chaveMes=r=> visao==="rec" && r.data_pagamento ? r.data_pagamento.slice(0,7) : r.data_prevista.slice(0,7);
+  const meses=[...new Set(base.map(chaveMes))].sort();
+  const linhas=linhasFluxo(base).map(l=>({...l, rs:base.filter(l.f)})).filter(l=>l.rs.length);
+  const fmt=x=> x.r===undefined ? (x.v?brl(x.v):"—") : (x.v||x.r ? `${brl(x.v)}<small>recebido ${brl(x.r)}</small>` : "—");
+  const plano=x=> x.r===undefined ? x.v : x.v;
+  $("fx-mhead").innerHTML=`<tr><th>${$("fx-linhas").value==="tipo"?"Tipo de recebimento":"Categoria / subcategoria"}</th>${meses.map(m=>`<th class="num">${mesNome(m)}</th>`).join("")}<th class="num">Total</th></tr>`;
+  const cel=(rs,k,m)=>{ const x=valorFx(rs,visao), s=fxCel&&fxCel.k===k&&fxCel.m===m; return `<td class="num ${s?"sel":""}" data-fxcel="${k}|${m||""}">${fmt(x)}</td>`; };
+  $("fx-mbody").innerHTML=linhas.map(l=>`<tr class="${l.grp?"grp":l.sub?"sub":""}"><td>${esc(l.nome)}</td>${meses.map(m=>cel(l.rs.filter(r=>chaveMes(r)===m),l.k,m)).join("")}${cel(l.rs,l.k,"")}</tr>`).join("")
+    || `<tr><td class="empty" colspan="${meses.length+2}">Nenhuma parcela com esses filtros.</td></tr>`;
+  const somaLinhas = $("fx-linhas").value==="cat" ? base : base;
+  $("fx-mfoot").innerHTML=`<tr><td>Total</td>${meses.map(m=>`<td class="num">${fmt(valorFx(somaLinhas.filter(r=>chaveMes(r)===m),visao))}</td>`).join("")}<td class="num">${fmt(valorFx(somaLinhas,visao))}</td></tr>`;
+  FXM={linhas,meses,chaveMes,visao};
+}
+$("fx-mbody").addEventListener("click", e=>{
+  const c=e.target.closest("[data-fxcel]"); if (!c||!FXM) return; const [k,m]=c.dataset.fxcel.split("|");
+  if (fxCel && fxCel.k===k && fxCel.m===m){ fxCel=null; $("fx-mes").value=""; renderFluxo(); return; }
+  const l=FXM.linhas.find(x=>x.k===k); if (!l) return;
+  fxCel={k,m,linha:l.f}; $("fx-mes").value=m||""; renderFluxo();
+  $("fx-rows").closest(".panel").scrollIntoView({behavior:"smooth",block:"start"});
+});
+["fx-linhas","fx-visao"].forEach(id=>$(id).addEventListener("change",()=>{ fxCel=null; renderFluxo(); }));
+$("fx-xlsx").onclick=async ()=>{
+  if (!FXM) return; await carregarXLSX();
+  const cab=[$("fx-linhas").value==="tipo"?"Tipo de recebimento":"Categoria / subcategoria", ...FXM.meses.map(mesNome), "Total"];
+  const val=rs=>{ const x=valorFx(rs,FXM.visao); return x.r===undefined?Number(x.v.toFixed(2)):`${x.v.toFixed(2)} / ${x.r.toFixed(2)}`; };
+  const rows=FXM.linhas.map(l=>[(l.sub?"   ":"")+l.nome, ...FXM.meses.map(m=>val(l.rs.filter(r=>FXM.chaveMes(r)===m))), val(l.rs)]);
+  const ws=XLSX.utils.aoa_to_sheet([cab,...rows]); ws["!cols"]=cab.map((_,i)=>({wch:i?14:34}));
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Fluxo"); XLSX.writeFile(wb,`fluxo-por-categoria-${hojeISO()}.xlsx`);
+};
 ["fx-sit","fx-mes","fx-cat","fx-tipo"].forEach(id=>$(id).addEventListener("change",renderFluxo));
 $("fx-q").addEventListener("input",renderFluxo);
 $("fx-rows").addEventListener("change", async e=>{
@@ -2864,19 +2948,37 @@ function irPara(acao){
   if (acao==="vencidas"){ $("fx-sit").value="vencido"; $("fx-mes").value=""; abrirAba("fluxo"); return; }
   if (acao==="sem_split"){ abrirSub("produtos"); return; }
 }
+function periodoInicio(){
+  const hoje=hojeISO(), d=new Date(hoje+"T12:00:00"), f=x=>x.toLocaleDateString("sv-SE"), op=$("in-per").value;
+  const menos=n=>{ const x=new Date(d); x.setDate(x.getDate()-n); return f(x); };
+  if (op==="hoje") return [hoje,hoje];
+  if (op==="7") return [menos(6),hoje];
+  if (op==="30") return [menos(29),hoje];
+  if (op==="mes") return [hoje.slice(0,8)+"01",hoje];
+  if (op==="mespass"){ const a=new Date(d.getFullYear(),d.getMonth()-1,1), b=new Date(d.getFullYear(),d.getMonth(),0); return [f(a),f(b)]; }
+  if (op==="tri"){ const a=new Date(d.getFullYear(),Math.floor(d.getMonth()/3)*3,1); return [f(a),hoje]; }
+  if (op==="ano") return [hoje.slice(0,4)+"-01-01",hoje];
+  return [$("in-de").value||hoje.slice(0,8)+"01", $("in-ate").value||hoje];
+}
 function renderInicio(){
-  const mes=mesSP(new Date().toISOString());
-  $("in-mes").textContent=new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric",timeZone:"America/Sao_Paulo"});
+  if (!$("in-per").dataset.ok){ $("in-per").dataset.ok="1"; $("in-per").value=lembrar("periodoInicio","30"); }
+  $("in-pers").hidden=$("in-per").value!=="pers";
+  const [de,ate]=periodoInicio(), noP=iso=>{ const x=dataLocal(iso); return x && x>=de && x<=ate; };
+  const txt=de===ate?dia(de):`${dia(de)} a ${dia(ate)}`;
+  $("in-per-txt").textContent=txt; $("in-mes").textContent=txt;
+  if (S.desde && de<S.desde) $("in-per-txt").textContent=txt+" · atenção: dados carregados só desde "+dia(S.desde)+" (mude em Dados carregados)";
   const vendas=S.vendas.filter(v=>v.tipo!=="parcela" && passaEmpresa(v.empresa_id));
-  const doMes=vendas.filter(v=>v.status==="aprovada" && mesSP(v.data_venda)===mes);
+  const doMes=vendas.filter(v=>v.status==="aprovada" && noP(v.data_venda));
   const soma=(a,k)=>a.reduce((s,x)=>s+Number(x[k]||0),0);
-  const aReceber=(S.receb||[]).filter(r=>r.situacao==="a_vencer" && passaEmpresa(r.empresa_id));
-  const emitMes=(S.fat||[]).filter(n=>n.situacao==="emitida" && passaEmpresaFat(n) && mesSP(n.emitida_em)===mes);
+  const aReceber=(S.receb||[]).filter(r=>r.situacao!=="pago" && passaEmpresa(r.empresa_id) && r.data_prevista>=de && r.data_prevista<=ate);
+  const recebido=(S.receb||[]).filter(r=>r.situacao==="pago" && passaEmpresa(r.empresa_id) && r.data_pagamento>=de && r.data_pagamento<=ate);
+  const emitMes=(S.fat||[]).filter(n=>n.situacao==="emitida" && passaEmpresaFat(n) && noP(n.emitida_em));
   $("in-kpis").innerHTML=`
-    <div class="kpi destaque"><span>Vendido no mês (aprovado)</span><b>${brl(soma(doMes,"valor_bruto"))}</b><small>${doMes.length} venda${doMes.length===1?"":"s"}</small></div>
-    <div class="kpi"><span>Líquido do mês</span><b>${brl(soma(doMes,"valor_liquido"))}</b><small>depois das taxas das plataformas</small></div>
-    <div class="kpi"><span>A receber (parcelas a vencer)</span><b>${brl(soma(aReceber,"valor_previsto"))}</b><small>${aReceber.length} parcela${aReceber.length===1?"":"s"}</small></div>
-    <div class="kpi"><span>Notas emitidas pelo sistema no mês</span><b>${emitMes.length}</b><small>${brl(soma(emitMes,"valor"))}</small></div>`;
+    <div class="kpi destaque"><span>Vendido no período (aprovado)</span><b>${brl(soma(doMes,"valor_bruto"))}</b><small>${doMes.length} venda${doMes.length===1?"":"s"}</small></div>
+    <div class="kpi"><span>Líquido no período</span><b>${brl(soma(doMes,"valor_liquido"))}</b><small>depois das taxas das plataformas</small></div>
+    <div class="kpi"><span>A receber no período</span><b>${brl(soma(aReceber,"valor_previsto"))}</b><small>${aReceber.length} parcela${aReceber.length===1?"":"s"} com vencimento no período</small></div>
+    <div class="kpi"><span>Recebido no período</span><b>${brl(recebido.reduce((s,r)=>s+Number(r.valor_recebido??r.valor_previsto),0))}</b><small>${recebido.length} parcela${recebido.length===1?"":"s"}</small></div>
+    <div class="kpi"><span>Notas emitidas pelo sistema</span><b>${emitMes.length}</b><small>${brl(soma(emitMes,"valor"))}</small></div>`;
   const fat=(S.fat||[]).filter(passaEmpresaFat), porSit=s=>fat.filter(n=>n.situacao===s);
   const vendasDe=l=>new Set(l.map(n=>n.venda_id)).size;
   const semProd=vendas.filter(semProduto);
@@ -2903,6 +3005,8 @@ function renderInicio(){
   $("in-emp").innerHTML=barrasHtml(grupo(v=>v.empresa_id??"sem", k=>k==="sem"?"Sem empresa (identificar produto)":nomeEmpresa(k)).slice(0,10));
   $("in-plat").innerHTML=barrasHtml(grupo(v=>v.plataforma, k=>PLAT_TODAS[k]||k));
 }
+$("in-per").addEventListener("change", e=>{ guardar("periodoInicio", e.target.value); renderInicio(); });
+["in-de","in-ate"].forEach(id=>$(id).addEventListener("change", renderInicio));
 $("in-pend").addEventListener("click", e=>{ const b=e.target.closest("[data-ir]"); if (b) irPara(b.dataset.ir); });
 
 /* ================= IDENTIFICAR PRODUTO NAS VENDAS ================= */
