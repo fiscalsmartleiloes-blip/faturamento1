@@ -477,6 +477,7 @@ dialog.lanc .lanc-body{display:flex;flex-direction:column;align-items:stretch;fl
       <input type="search" id="f-q" placeholder="Buscar produto, comprador, CPF ou transação" aria-label="Buscar">
     </div>
     <div class="alert" id="alerta-produtos" hidden></div>
+    <div class="alert" id="alerta-asaas" hidden></div>
     <section class="sources" id="sources" aria-label="Plataformas"></section>
     <section class="totals" id="totals" aria-label="Totais"></section>
     <div id="vs-lote"></div>
@@ -1155,7 +1156,29 @@ function vendasFiltradas(){
     (!q || [v.produto_nome,v.comprador_nome,v.comprador_email,v.id_transacao].join(" ").toLowerCase().includes(q) ||
       (qn.length>=3 && String(v.comprador_documento||"").includes(qn))));
 }
+/* ---- Asaas: cobranças que chegaram sem os dados do cliente ---- */
+const semClienteAsaas = () => S.vendas.filter(v=>v.plataforma==="asaas" && v.ext_cliente && !v.comprador_documento);
+let buscandoAsaas=false;
+async function buscarClientesAsaas(silencioso){
+  if (buscandoAsaas) return; buscandoAsaas=true;
+  if (!silencioso) toast("Buscando os clientes no Asaas…");
+  try{
+    const { data, error } = await sb.functions.invoke("asaas",{ body:{ acao:"clientes" } });
+    let erro=null; if (error){ erro=error.message; try{ erro=(await error.context.json()).erro||erro; }catch(_){} }
+    else if (data && data.erro) erro=data.erro;
+    guardar("asaasBuscaEm", Date.now());
+    if (erro){ if (!silencioso) toast(/Failed to send|not found|404/i.test(erro)?"A função \"asaas\" ainda não foi publicada no Supabase":erro); return; }
+    if (!silencioso || data.encontrados) toast(`Asaas: ${data.encontrados} cliente(s) encontrado(s)${data.nao_encontrados&&data.nao_encontrados.length?`, ${data.nao_encontrados.length} não encontrado(s)`:""}`);
+    if (data.encontrados) await carregarTudo(false);
+  } finally { buscandoAsaas=false; }
+}
 function renderVendas(){
+  const nAs=semClienteAsaas().length, alA=$("alerta-asaas");
+  if (nAs && podeEditar("vendas")){
+    alA.hidden=false; alA.innerHTML=`${nAs} cobrança${nAs>1?"s":""} do Asaas chegaram sem nome/CPF do cliente (o aviso do Asaas não traz esses dados). <button type="button" id="b-asaas-cli">Buscar dados no Asaas</button>`;
+    $("b-asaas-cli").onclick=()=>buscarClientesAsaas(false);
+    if (Date.now()-Number(lembrar("asaasBuscaEm",0))>15*60000) buscarClientesAsaas(true);
+  } else alA.hidden=true;
   const semEmpresa = S.produtos.filter(p=>!p.oferta && !p.agrupado_em && p.empresa_id==null).length;
   const al=$("alerta-produtos"), nSem=S.vendas.filter(v=>v.tipo!=="parcela" && passaEmpresa(v.empresa_id) && semProduto(v)).length;
   if (nSem && $("f-prod").value!=="sem"){ al.hidden=false; al.innerHTML=`${nSem} venda${nSem>1?"s":""} sem produto identificado. Elas não geram nota até você identificar o produto. <button type="button" id="ir-sem-prod">Mostrar essas vendas</button>`; $("ir-sem-prod").onclick=()=>{ $("f-prod").value="sem"; renderVendas(); }; }
