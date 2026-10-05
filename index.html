@@ -219,8 +219,15 @@ details summary{cursor:pointer;font-weight:600;font-size:13px}
 .senha-box{font-family:var(--font-mono);background:var(--surface-2);padding:8px 12px;border-radius:8px;user-select:all}
 dialog.nv{width:min(640px,96vw);border:1px solid var(--line);border-radius:14px;padding:0;background:var(--surface);color:var(--fg)}
 dialog.nv::backdrop{background:rgba(10,15,30,.55)}
-.parc-row{display:grid;grid-template-columns:44px 150px 130px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.parc-row{display:grid;grid-template-columns:40px 150px 130px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--line)}
 .parc-row:last-child{border-bottom:0}
+#aba-assinaturas .ledger{grid-template-columns:minmax(0,1fr) 470px}
+@media (max-width:1100px){ #aba-assinaturas .ledger{grid-template-columns:1fr} }
+table.mini{font-size:12px} table.mini th,table.mini td{padding:6px 5px} table.mini .pill{font-size:11px;padding:1px 6px}
+.parc-cab{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.parc-acoes{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.parc-acoes .parc-dt{width:140px}
+@media (max-width:700px){ .parc-row{grid-template-columns:34px 1fr 1fr} .parc-row > :nth-child(4),.parc-row > :nth-child(5){grid-column:1/-1} }
 .hist{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
 .hist small{color:var(--muted)} .hist .mud{font-size:12.5px;overflow-wrap:anywhere}
 .hist .mud s{color:var(--bad)} .hist .mud ins{color:var(--ok);text-decoration:none}
@@ -689,6 +696,7 @@ dialog.lanc .lanc-body{display:flex;flex-direction:column;align-items:stretch;fl
       <select id="fx-cat" aria-label="Categoria"></select>
       <select id="fx-tipo" aria-label="Tipo de recebimento"></select>
       <input type="search" id="fx-q" placeholder="Buscar comprador, produto ou transação" aria-label="Buscar no fluxo">
+      <label class="field check"><input type="checkbox" id="fx-assin" checked>Incluir previsão das assinaturas</label>
     </div>
     <section class="totals" id="fx-totals"></section>
     <div class="panel">
@@ -1106,7 +1114,7 @@ function abrirAba(a){
 function abrirSub(s){ subAtual=s; abrirAba("config"); }
 
 /* ---------------- modo só consulta ---------------- */
-const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-prod,#f-etapa,#f-q,#as-q,#as-sit,[data-as],#cc-q,#cc-vinc,#cc-tipo,[data-cc],#cc-busca,#rl-tipo,#rl-de,#rl-ate,#rl-gerar,#rl-xlsx,#rl-csv,#rl-print,#bg-q,[data-bg],#in-per,#in-de,#in-ate,#fx-visao,#fx-linhas,[data-fxcel],#menu-btn,[data-menu-modo],#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
+const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-prod,#f-etapa,#f-q,#as-q,#as-sit,[data-as],#cc-q,#cc-vinc,#cc-tipo,[data-cc],#cc-busca,#rl-tipo,#rl-de,#rl-ate,#rl-gerar,#rl-xlsx,#rl-csv,#rl-print,#bg-q,[data-bg],#in-per,#in-de,#in-ate,#fx-visao,#fx-linhas,#fx-assin,[data-fxcel],#menu-btn,[data-menu-modo],#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
 function aplicarLeitura(){
   if (!PERFIL) return;
   const tela = telaDe(abaAtual, subAtual), so = abaAtual!=="inicio" && !podeEditar(tela) && !(abaAtual==="config" && ["usuarios","setores"].includes(subAtual));
@@ -1401,41 +1409,51 @@ $("lanc-dir").addEventListener("click", async e=>{
 /* ---- parcelas previstas da venda ---- */
 function renderParcelasVenda(v){
   const el=$("parc-card"); if (!el) return;
-  const R=(S.receb||[]).filter(r=>r.venda_id===v.id).sort((a,b)=>a.parcela-b.parcela);
-  const temManual=R.some(r=>r.manual), soma=R.reduce((s,r)=>s+Number(r.valor_previsto||0),0);
-  el.innerHTML=`<div class="sec-title">Pagamentos previstos (${R.length}) · ${brl(soma)}</div>
-    ${v.tipo==="contrato"?`<p class="note">Neste contrato, as parcelas vêm das cobranças vinculadas (aba Venda e valores, acima). Você também pode lançar parcelas à mão aqui.</p>`:""}
-    ${R.length?R.map(r=>`<div class="parc-row" data-rec="${r.id}">
-      <span>${r.parcela}ª</span>
-      ${r.manual&&!r.data_pagamento?`<input type="date" data-rf="data_prevista" value="${r.data_prevista}" aria-label="Data prevista">`:`<span>${dia(r.data_prevista)}</span>`}
-      ${r.manual&&!r.data_pagamento?`<input type="number" step="0.01" data-rf="valor_previsto" value="${r.valor_previsto}" aria-label="Valor">`:`<b>${brl(r.valor_previsto)}</b>`}
-      <span>${pill(SIT_REC,r.situacao)}${r.data_pagamento?` <small class="note">recebido em ${dia(r.data_pagamento)}</small>`:""} ${r.manual?'<small class="note">· manual</small>':'<small class="note">· automática</small>'}</span>
-      <span>${r.manual?`<button type="button" class="btn link danger" data-rdel="${r.id}">Excluir</button>`:""}</span></div>`).join(""):`<p class="note">Nenhum pagamento previsto ainda.</p>`}
-    <div class="merge-row" style="margin-top:8px">
+  const R=(S.receb||[]).filter(r=>r.venda_id===v.id || (v.tipo==="contrato" && r.contrato_id===v.id)).sort((a,b)=>String(a.data_prevista).localeCompare(String(b.data_prevista))||a.parcela-b.parcela);
+  const prev=R.reduce((s,r)=>s+Number(r.valor_previsto||0),0), rec=R.filter(r=>r.data_pagamento).reduce((s,r)=>s+Number(r.valor_recebido??r.valor_previsto),0);
+  const controle=R.some(r=>r.manual && r.venda_id===v.id), hoje=hojeISO();
+  el.innerHTML=`<div class="sec-title">Pagamentos previstos (${R.length}) · previsto ${brl(prev)} · recebido ${brl(rec)} · em aberto ${brl(prev-rec>0?prev-rec:0)}</div>
+    ${R.length?`<div class="parc-row parc-cab"><span>Nº</span><span>Data prevista</span><span>Valor</span><span>Situação</span><span></span></div>`+R.map((r,i)=>{ const pago=!!r.data_pagamento;
+      return `<div class="parc-row" data-rec="${r.id}">
+      <span>${i+1}ª</span>
+      ${pago?`<span>${dia(r.data_prevista)}</span>`:`<input type="date" data-rf="data" value="${r.data_prevista}" aria-label="Data prevista">`}
+      ${pago?`<b>${brl(r.valor_previsto)}</b>`:`<input type="number" step="0.01" min="0" data-rf="valor" value="${r.valor_previsto}" aria-label="Valor previsto">`}
+      <span>${pill(SIT_REC,r.situacao)}${pago?` <small class="note">em ${dia(r.data_pagamento)}${Number(r.valor_recebido??r.valor_previsto)!==Number(r.valor_previsto)?" · "+brl(r.valor_recebido):""}</small>`:""}${r.venda_id!==v.id?' <small class="note">· cobrança vinculada</small>':""}</span>
+      <span class="parc-acoes">${pago?`<button type="button" class="btn link" data-rdesfaz="${r.id}">Desfazer baixa</button>`
+        :`<input type="date" class="parc-dt" data-rbaixa-data="${r.id}" value="${r.data_prevista<=hoje?r.data_prevista:hoje}" aria-label="Data do recebimento"><button type="button" class="btn" data-rbaixa="${r.id}">Marcar recebida</button>`}
+        <button type="button" class="btn link danger" data-rdel="${r.id}">Excluir</button></span></div>`; }).join(""):`<p class="note">Nenhum pagamento previsto.</p>`}
+    <div class="merge-row" style="margin-top:10px">
+      <span class="note"><b>Adicionar:</b></span>
       <input type="number" min="1" step="1" id="pg-n" value="1" style="width:70px" aria-label="Quantidade de parcelas">
       <span class="note">parcela(s) de</span><input type="number" step="0.01" id="pg-v" value="${(Number(v.valor_bruto||0)/(v.parcelas||1)).toFixed(2)}" style="width:120px" aria-label="Valor de cada parcela">
       <span class="note">a partir de</span><input type="date" id="pg-d" aria-label="Primeira data" value="${new Date(Date.now()+30*864e5).toLocaleDateString("sv-SE")}">
-      <select id="pg-int" aria-label="Intervalo"><option value="1">mensal</option><option value="0.5">quinzenal</option><option value="3">trimestral</option><option value="12">anual</option></select>
+      <select id="pg-int" aria-label="Intervalo" style="flex:none;width:auto;min-width:0"><option value="1">mensal</option><option value="0.5">quinzenal</option><option value="3">trimestral</option><option value="12">anual</option></select>
       <button type="button" class="btn" id="pg-add">+ Adicionar</button></div>
-    <small class="note">${temManual?"Esta venda usa parcelas lançadas à mão: o cálculo automático está desligado. Excluindo todas as manuais, ele volta.":"Ao lançar a primeira parcela à mão, as previstas automáticas que ainda não foram pagas são substituídas."}</small>`;
+    <small class="note">${controle
+      ? `As parcelas desta venda estão <b>sob seu controle</b>: o sistema não recalcula mais sozinho. <button type="button" class="btn link" id="pg-auto">Voltar ao cálculo automático</button> (apaga as não recebidas e recalcula pela regra da plataforma).`
+      : `Parcelas calculadas pelo sistema (regra da plataforma). Pode dar baixa à vontade; se você editar, excluir ou adicionar, a venda passa a ficar sob seu controle.`}</small>`;
 }
 const SIT_REC={a_vencer:["A vencer","p-info"],vencido:["Vencida","p-bad"],perda_estimada:["Perda (+90d)","p-bad"],pago:["Recebida","p-ok"]};
 $("lanc-dir").addEventListener("click", async e=>{
   const v=S.vendas.find(x=>x.id===editando); if(!v) return;
+  const rpcParc=async (fn,args,msg)=>{ const { error } = await sb.rpc(fn,args); if (error){ toast(/function|does not exist/i.test(error.message)?"Rode o SQL 19 no Supabase":"Não foi possível: "+error.message); return false; } toast(msg); await carregarTudo(false); renderParcelasVenda(S.vendas.find(x=>x.id===v.id)||v); return true; };
   if (e.target.id==="pg-add"){
-    const n=Math.max(parseInt($("pg-n").value||"1",10),1), val=Number($("pg-v").value), ini=$("pg-d").value, passo=Number($("pg-int").value);
+    const n=Math.max(parseInt($("pg-n").value||"1",10),1), val=Number($("pg-v").value), ini=$("pg-d").value;
     if (!val || !ini){ toast("Informe o valor e a primeira data"); return; }
-    const existentes=(S.receb||[]).filter(r=>r.venda_id===v.id); let num=existentes.reduce((m,r)=>Math.max(m,r.parcela),0);
-    const linhas=[]; for (let i=0;i<n;i++){ const d=new Date(ini+"T12:00:00"); if (passo<1) d.setDate(d.getDate()+15*i); else d.setMonth(d.getMonth()+passo*i);
-      linhas.push({ venda_id:v.id, parcela:++num, total_parcelas:existentes.length+n, valor_bruto:val, taxa:0, coprodutor:0, valor_previsto:val, data_prevista:d.toLocaleDateString("sv-SE"), manual:true }); }
-    e.target.disabled=true;
-    for (const l of linhas){ const { error } = await sb.from("recebimentos").insert(l); if (error){ toast("Não foi possível: "+error.message); e.target.disabled=false; return; } }
-    toast(`${n} pagamento(s) previsto(s) lançado(s)`); await carregarTudo(false); renderParcelasVenda(S.vendas.find(x=>x.id===v.id)||v); return;
+    e.target.disabled=true; await rpcParc("parcelas_incluir",{p_venda:v.id,p_qtd:n,p_valor:val,p_inicio:ini,p_meses:Number($("pg-int").value)},`${n} pagamento(s) previsto(s) adicionado(s)`); return;
   }
+  if (e.target.id==="pg-auto"){
+    if (e.target.dataset.ok!=="1"){ e.target.dataset.ok="1"; e.target.textContent="Confirmar: voltar ao automático"; return; }
+    await rpcParc("parcelas_automatico",{p_venda:v.id},"Parcelas recalculadas pela regra da plataforma"); return;
+  }
+  const bx=e.target.closest("[data-rbaixa]");
+  if (bx){ const id=Number(bx.dataset.rbaixa), dt=($("lanc").querySelector(`[data-rbaixa-data="${id}"]`)||{}).value||hojeISO();
+    await rpcParc("parcela_baixa",{p_id:id,p_data:dt,p_valor:null},"Parcela marcada como recebida"); return; }
+  const dz=e.target.closest("[data-rdesfaz]");
+  if (dz){ await rpcParc("parcela_baixa",{p_id:Number(dz.dataset.rdesfaz),p_data:null,p_valor:null},"Baixa desfeita"); return; }
   const d=e.target.closest("[data-rdel]");
   if (d){ if (d.dataset.ok!=="1"){ d.dataset.ok="1"; d.textContent="Confirmar"; return; }
-    const { error } = await sb.from("recebimentos").delete().eq("id",Number(d.dataset.rdel)); if (error){ toast("Não foi possível: "+error.message); return; }
-    toast("Pagamento previsto excluído"); await carregarTudo(false); renderParcelasVenda(v); return; }
+    await rpcParc("parcela_excluir",{p_id:Number(d.dataset.rdel)},"Pagamento previsto excluído"); return; }
   if (e.target.id==="v-concluir"||e.target.id==="v-reabrir"){
     const concluir=e.target.id==="v-concluir";
     if (!(await salvar("vendas", v.id, {concluida_manual:concluir, concluida_em:concluir?new Date().toISOString():null, concluida_por:concluir?emailUsuario:null}, concluir?"Venda movida para Concluídas":"Venda reaberta"))) return;
@@ -1461,9 +1479,10 @@ $("lanc-dir").addEventListener("click", async e=>{
 });
 $("lanc-dir").addEventListener("change", async e=>{
   const row=e.target.closest("[data-rec]"); const f=e.target.dataset.rf; if (!row||!f) return;
-  const val = f==="valor_previsto" ? Number(e.target.value) : e.target.value;
-  const campos = f==="valor_previsto" ? {valor_previsto:val, valor_bruto:val} : {[f]:val};
-  if (await salvar("recebimentos", Number(row.dataset.rec), campos, "Pagamento previsto atualizado")) await carregarTudo(false);
+  const id=Number(row.dataset.rec), v=S.vendas.find(x=>x.id===editando);
+  const { error } = await sb.rpc("parcela_salvar",{p_id:id, p_data: f==="data"?(e.target.value||null):null, p_valor: f==="valor"?Number(e.target.value):null});
+  if (error){ toast(/function|does not exist/i.test(error.message)?"Rode o SQL 19 no Supabase":"Não foi possível: "+error.message); return; }
+  toast("Pagamento previsto atualizado"); await carregarTudo(false); if (v) renderParcelasVenda(S.vendas.find(x=>x.id===v.id)||v);
 });
 /* ---- histórico de alterações ---- */
 const NOMES_CAMPO={status:"Status",valor_bruto:"Valor pago",valor_liquido:"Valor líquido",taxa_plataforma:"Taxa",produto_id:"Produto",produto_nome:"Produto",empresa_id:"Empresa",
@@ -2482,8 +2501,23 @@ $("hi-ir").addEventListener("click", async ()=>{
 });
 
 /* ================= FLUXO ================= */
+/* previsões das assinaturas como parcelas "virtuais" (somem sozinhas quando a cobrança real chega) */
+function recebAssinaturas(){
+  if (!(S.assin||[]).length) return [];
+  const hoje=hojeISO(), rec=catsDo("tipo_recebimento").find(c=>/recorr|assinat/i.test(c.nome));
+  const out=[];
+  (S.assin||[]).forEach(a=>{ const i=infoAssin(a), prod=S.produtos.find(p=>p.id===a.produto_id)||{};
+    i.prev.forEach((p,k)=>out.push({ id:`as${a.id}-${k}`, virtual:true, assin_id:a.id, venda_id:null, parcela:"", total_parcelas:"",
+      valor_bruto:p.valor, taxa:0, coprodutor:0, valor_previsto:p.valor, data_prevista:p.data, data_pagamento:null, valor_recebido:null,
+      situacao: p.data<addDias(hoje,-90)?"perda_estimada": p.data<hoje?"vencido":"a_vencer",
+      comprador_nome:a.comprador_nome||a.chave, produto_nome:prod.nome||"Assinatura", id_transacao:"Assinatura", data_venda:null,
+      empresa_id:a.empresa_id, tipo_recebimento_id: rec?rec.id:null, categoria_id:prod.categoria_id??null, subcategoria_id:prod.subcategoria_id??null })); });
+  return out;
+}
+const recebComAssin = () => (S.receb||[]).concat(($("fx-assin")?$("fx-assin").checked:true) ? recebAssinaturas() : []);
 function renderFluxo(){
-  const meses=[...new Set(S.receb.map(r=>r.data_prevista.slice(0,7)))].sort();
+  const todos=recebComAssin();
+  const meses=[...new Set(todos.map(r=>r.data_prevista.slice(0,7)))].sort();
   const mSel=$("fx-mes").value;
   $("fx-mes").innerHTML = `<option value="">Todos os meses</option>` + meses.map(m=>{const [a,b]=m.split("-"); return `<option value="${m}">${b}/${a}</option>`;}).join("");
   $("fx-mes").value = meses.includes(mSel)?mSel:"";
@@ -2492,7 +2526,7 @@ function renderFluxo(){
   $("fx-cat").value=cSel; $("fx-tipo").innerHTML = optCats("tipo_recebimento", null, "Todos os tipos"); $("fx-tipo").value=tSel;
 
   const sit=$("fx-sit").value, mes=$("fx-mes").value, cat=$("fx-cat").value, tipo=$("fx-tipo").value, q=$("fx-q").value.trim().toLowerCase();
-  const base=S.receb.filter(r=> passaEmpresa(r.empresa_id) && (!sit||r.situacao===sit) &&
+  const base=todos.filter(r=> passaEmpresa(r.empresa_id) && (!sit||r.situacao===sit) &&
     (!cat || (cat==="nc" ? r.subcategoria_id==null : String(r.subcategoria_id)===cat)) && (!tipo || String(r.tipo_recebimento_id)===tipo) &&
     (!q || [r.comprador_nome,r.produto_nome,r.id_transacao].join(" ").toLowerCase().includes(q)));
   renderMatrizFluxo(base);
@@ -2508,7 +2542,14 @@ function renderFluxo(){
   $("fx-count").textContent = `${list.length} parcela${list.length===1?"":"s"}`;
   $("fx-empty").hidden = list.length>0;
   const tipos = catsDo("tipo_recebimento");
-  $("fx-rows").innerHTML = list.map(r=>`
+  $("fx-rows").innerHTML = list.map(r=> r.virtual ? `
+    <tr class="clic" data-assin="${r.assin_id}" title="Previsão da assinatura: some sozinha quando a cobrança real chegar">
+      <td>${dia(r.data_prevista)}</td><td>—</td><td><span class="pill p-info">Assinatura</span></td>
+      <td class="trunc" title="${esc(r.comprador_nome)}">${esc(r.comprador_nome)}</td><td class="trunc" title="${esc(r.produto_nome)}">${esc(r.produto_nome)}</td>
+      <td>prevista</td><td class="num">${brl(r.valor_bruto)}</td><td class="num">—</td><td class="num">—</td><td class="num"><b>${brl(r.valor_previsto)}</b></td>
+      <td class="trunc">${esc(r.subcategoria_id?nomeCat(r.subcategoria_id):"Não classificado")}</td><td>${esc(r.tipo_recebimento_id?nomeCat(r.tipo_recebimento_id):"—")}</td>
+      <td colspan="2"><small class="note">entra quando a cobrança for lançada</small></td><td>${pill(SIT,r.situacao)}</td>
+    </tr>` : `
     <tr data-r="${r.id}" data-v="${r.venda_id}">
       <td>${dia(r.data_prevista)}</td><td>${dt(r.data_venda).slice(0,8)}</td><td class="id">${esc(r.id_transacao)}</td>
       <td class="trunc" title="${esc(r.comprador_nome)}">${esc(r.comprador_nome)}</td><td class="trunc" title="${esc(r.produto_nome)}">${esc(r.produto_nome)}</td>
@@ -2578,6 +2619,8 @@ $("fx-xlsx").onclick=async ()=>{
 };
 ["fx-sit","fx-mes","fx-cat","fx-tipo"].forEach(id=>$(id).addEventListener("change",renderFluxo));
 $("fx-q").addEventListener("input",renderFluxo);
+$("fx-assin").addEventListener("change",()=>{ fxCel=null; renderFluxo(); });
+$("fx-rows").addEventListener("click", e=>{ const tr=e.target.closest("tr[data-assin]"); if (tr){ selAssin=Number(tr.dataset.assin); abrirAba("assinaturas"); } });
 $("fx-rows").addEventListener("change", async e=>{
   const el=e.target, tr=el.closest("tr"); if(!tr) return;
   const rid=Number(tr.dataset.r), vid=Number(tr.dataset.v), r=S.receb.find(x=>x.id===rid);
@@ -2970,13 +3013,13 @@ function renderInicio(){
   const vendas=S.vendas.filter(v=>v.tipo!=="parcela" && passaEmpresa(v.empresa_id));
   const doMes=vendas.filter(v=>v.status==="aprovada" && noP(v.data_venda));
   const soma=(a,k)=>a.reduce((s,x)=>s+Number(x[k]||0),0);
-  const aReceber=(S.receb||[]).filter(r=>r.situacao!=="pago" && passaEmpresa(r.empresa_id) && r.data_prevista>=de && r.data_prevista<=ate);
+  const aReceber=(S.receb||[]).concat(recebAssinaturas()).filter(r=>r.situacao!=="pago" && passaEmpresa(r.empresa_id) && r.data_prevista>=de && r.data_prevista<=ate);
   const recebido=(S.receb||[]).filter(r=>r.situacao==="pago" && passaEmpresa(r.empresa_id) && r.data_pagamento>=de && r.data_pagamento<=ate);
   const emitMes=(S.fat||[]).filter(n=>n.situacao==="emitida" && passaEmpresaFat(n) && noP(n.emitida_em));
   $("in-kpis").innerHTML=`
     <div class="kpi destaque"><span>Vendido no período (aprovado)</span><b>${brl(soma(doMes,"valor_bruto"))}</b><small>${doMes.length} venda${doMes.length===1?"":"s"}</small></div>
     <div class="kpi"><span>Líquido no período</span><b>${brl(soma(doMes,"valor_liquido"))}</b><small>depois das taxas das plataformas</small></div>
-    <div class="kpi"><span>A receber no período</span><b>${brl(soma(aReceber,"valor_previsto"))}</b><small>${aReceber.length} parcela${aReceber.length===1?"":"s"} com vencimento no período</small></div>
+    <div class="kpi"><span>A receber no período</span><b>${brl(soma(aReceber,"valor_previsto"))}</b><small>${aReceber.length} parcela${aReceber.length===1?"":"s"} com vencimento no período${aReceber.some(r=>r.virtual)?" (inclui assinaturas)":""}</small></div>
     <div class="kpi"><span>Recebido no período</span><b>${brl(recebido.reduce((s,r)=>s+Number(r.valor_recebido??r.valor_previsto),0))}</b><small>${recebido.length} parcela${recebido.length===1?"":"s"}</small></div>
     <div class="kpi"><span>Notas emitidas pelo sistema</span><b>${emitMes.length}</b><small>${brl(soma(emitMes,"valor"))}</small></div>`;
   const fat=(S.fat||[]).filter(passaEmpresaFat), porSit=s=>fat.filter(n=>n.situacao===s);
@@ -3186,6 +3229,26 @@ function infoAssin(a){
   const sit = a.status!=="ativa" ? a.status : (a.fim && a.fim<hoje) ? "encerrada" : (prox && prox<addDias(hoje,-5)) ? "atrasada" : "em_dia";
   return {cob,pagas,ult,prox,prev,sit,totalPago:pagas.reduce((s,v)=>s+Number(v.valor_bruto||0),0)};
 }
+function tabelaMesAMes(a,i){
+  const hoje=hojeISO(), per=a.periodicidade_meses||1;
+  const ini=(a.inicio || (i.cob[0]&&dataLocal(i.cob[0].data_venda)) || hoje).slice(0,7);
+  const fim=addMeses(hoje,3).slice(0,7), meses=[];
+  let m=ini; while (m<=fim && meses.length<60){ meses.push(m); m=addMeses(m+"-15",1).slice(0,7); }
+  const mostrar=meses.slice(-15);
+  const pagoNo=mm=>i.pagas.filter(v=>(v.data_pagamento||dataLocal(v.data_venda)).slice(0,7)===mm);
+  const aguard=mm=>i.cob.filter(v=>v.status!=="aprovada" && (v.vencimento||dataLocal(v.data_venda)).slice(0,7)===mm);
+  const linhas=mostrar.map(mm=>{
+    const idx=meses.indexOf(mm), esperado = idx%per===0 && (!a.fim || mm<=a.fim.slice(0,7)) && (a.status==="ativa" || mm<hoje.slice(0,7)) ? Number(a.valor||0) : 0;
+    const pg=pagoNo(mm), val=pg.reduce((s,v)=>s+Number(v.valor_bruto||0),0), ag=aguard(mm);
+    const fut=mm>hoje.slice(0,7), atual=mm===hoje.slice(0,7);
+    const sit = val>0 ? (esperado && val+0.01<esperado ? ["Pago a menor","p-warn"] : ["Recebido","p-ok"])
+      : ag.length ? ["Cobrança em aberto","p-warn"] : !esperado ? ["—","p-mute"] : fut ? ["Previsto","p-info"] : atual ? ["Aguardando","p-info"] : ["Não recebido","p-bad"];
+    return `<tr><td>${mm.slice(5)}/${mm.slice(2,4)}</td><td class="num">${esperado?brl(esperado):"—"}</td><td class="num">${val?brl(val):"—"}</td><td><span class="pill ${sit[1]}">${sit[0]}</span></td></tr>`; });
+  const faltas=mostrar.filter(mm=>{ const idx=meses.indexOf(mm); return idx%per===0 && mm<hoje.slice(0,7) && !pagoNo(mm).length && (!a.fim||mm<=a.fim.slice(0,7)); }).length;
+  return `${faltas?`<p class="note" style="color:var(--bad)"><b>${faltas} mês(es) sem pagamento</b> nos últimos ${mostrar.length} meses.</p>`:""}
+    <div class="tbl-wrap"><table class="mini"><thead><tr><th>Mês</th><th class="num">Esperado</th><th class="num">Recebido</th><th>Situação</th></tr></thead><tbody>${linhas.reverse().join("")}</tbody></table></div>
+    <small class="note">Recebido = cobranças aprovadas deste aluno e produto no mês. "Não recebido" = mês esperado já passou sem pagamento.</small>`;
+}
 async function criarAssinaturaDaVenda(v, per=1){
   const k=chaveVenda(v); if (!k){ toast("Para virar assinatura, a venda precisa ter CPF ou e-mail do comprador"); return; }
   let valor=Number(v.valor_bruto||0);
@@ -3240,6 +3303,7 @@ function renderAssinaturas(){
         <label class="field">Produto<select data-af="produto_id"><option value="">Qualquer produto do aluno</option>${produtosReais().map(p=>`<option value="${p.id}" ${p.id===a.produto_id?"selected":""}>${esc(p.nome)}</option>`).join("")}</select></label>
       </div>
       <label class="field">Observações<textarea data-af="observacoes" rows="2">${esc(a.observacoes||"")}</textarea></label>
+      <div class="card"><div class="sec-title">Mês a mês: esperado × recebido</div>${tabelaMesAMes(a,i)}</div>
       <div class="card"><div class="sec-title">Próximas cobranças previstas</div>${i.prev.slice(0,6).map(p=>`<div class="nota"><span>${dia(p.data)}</span><b>${brl(p.valor)}</b></div>`).join("")||'<p class="note">Sem previsão (assinatura pausada, cancelada ou encerrada).</p>'}</div>
       <div class="card"><div class="sec-title">Cobranças lançadas (${i.cob.length})</div>${i.cob.slice().reverse().slice(0,24).map(v=>`<div class="nota"><span><button type="button" class="btn link" data-abrir-venda="${v.id}">${dt(v.data_venda).slice(0,8)}</button> ${pill(STATUS,v.status)}</span><b>${brl(v.valor_bruto)}</b></div>`).join("")||'<p class="note">Nenhuma cobrança encontrada para este CPF/e-mail e produto.</p>'}</div>
       <div class="controls"><button type="button" class="btn danger" id="as-excluir">Excluir assinatura</button></div>
