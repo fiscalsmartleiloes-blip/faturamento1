@@ -645,16 +645,17 @@ dialog.lanc .lanc-body{display:flex;flex-direction:column;align-items:stretch;fl
     </div></div>
     <div class="controls">
       <select id="em-f-origem" aria-label="Origem"><option value="">Todas as origens</option><option value="notazz">Notazz</option><option value="antigas">VHSYS e outros sistemas</option></select>
-      <select id="em-f-vinc" aria-label="Vínculo"><option value="sem">Sem vínculo</option><option value="com">Vinculadas</option><option value="">Todas</option></select>
+      <select id="em-f-vinc" aria-label="Vínculo"><option value="sem">Sem vínculo</option><option value="com">Vinculadas</option><option value="">Todas</option><option value="ocultas">Ocultas (excluídas da Notazz)</option></select>
       <select id="em-f-tipo" aria-label="Tipo"><option value="">NF-e e NFS-e</option><option value="nfe">NF-e</option><option value="nfs">NFS-e</option></select>
       <select id="em-f-status" aria-label="Situação na Notazz"><option value="">Todas as situações</option><option value="autoriz">Autorizadas</option><option value="cancel">Canceladas</option><option value="outras">Outras</option></select>
       <input type="search" id="em-q" placeholder="Buscar cliente, CPF, e-mail ou número" aria-label="Buscar nota">
     </div>
     <section class="totals t4" id="em-totals"></section>
+    <div id="em-lote"></div>
     <div class="panel">
       <div class="panel-head"><h2>Notas da Notazz</h2><small id="em-count"></small></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Emissão</th><th>Nº</th><th>Tipo</th><th>Emissora</th><th>Cliente</th><th>CPF/CNPJ</th><th class="num">Valor</th><th>Situação</th><th>Venda vinculada</th><th></th></tr></thead>
+        <thead><tr><th><input type="checkbox" id="em-todas" aria-label="Selecionar todas sem vínculo"></th><th>Emissão</th><th>Nº</th><th>Tipo</th><th>Emissora</th><th>Cliente</th><th>CPF/CNPJ</th><th class="num">Valor</th><th>Situação</th><th>Venda vinculada</th><th></th></tr></thead>
         <tbody id="em-rows"></tbody>
       </table><div class="empty" id="em-empty" hidden>Nenhuma nota. Use "Buscar notas na Notazz" para trazer o histórico.</div></div>
     </div>
@@ -1025,11 +1026,12 @@ async function carregarTudo(primeiraVez){
     buscarTodas(()=>sb.from("produto_split").select("*").order("ordem").order("id")),
     buscarTodas(()=>filtro(sb.from("vw_recebimentos").select("*"),"data_prevista","data_pagamento.is.null").order("data_prevista").order("id")),
     buscarTodas(()=>filtro(sb.from("vw_faturamento").select("*"),"data_venda",`situacao.in.(${PEND_FAT})`).order("liberada_em").order("id")),
-    buscarTodas(()=>filtro(sb.from("notas_externas").select("id,notazz_id,origem,empresa_id,emissor_cnpj,tipo_nf,numero,chave,status_notazz,valor,emissao,cliente_nome,cliente_email,cliente_celular,cliente_documento,venda_ref,pdf_url,xml_url,xml_path,pdf_path,pdf_espelho,confere,venda_id,nota_id,vinculo,vinculado_por"),"emissao","venda_id.is.null").order("emissao",{ascending:false}).order("id"))
+    buscarTodas(()=>filtro(sb.from("notas_externas").select("*"),"emissao","venda_id.is.null").order("emissao",{ascending:false}).order("id"))
   ]);
   const erro = q.find(r=>r.error);
   if (erro){ if (/JWT|auth/i.test(erro.error.message)) { await sb.auth.signOut(); return; } toast("Erro ao carregar: "+erro.error.message); return; }
   [S.empresas,S.produtos,S.vendas,S.cats,S.coprod,S.regras,S.splits,S.receb,S.fat,S.ext] = q.map(r=>r.data);
+  S.extOcultas = S.ext.filter(x=>x.ignorada); S.ext = S.ext.filter(x=>!x.ignorada);
   // vendas antigas que ainda têm algo pendente (nota, parcela, contrato, nota vinculada) também entram
   if (desde){
     const tem=new Set(S.vendas.map(v=>v.id)), faltam=new Set();
@@ -1114,7 +1116,7 @@ function abrirAba(a){
 function abrirSub(s){ subAtual=s; abrirAba("config"); }
 
 /* ---------------- modo só consulta ---------------- */
-const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-prod,#f-etapa,#f-q,#as-q,#as-sit,[data-as],#cc-q,#cc-vinc,#cc-tipo,[data-cc],#cc-busca,#rl-tipo,#rl-de,#rl-ate,#rl-gerar,#rl-xlsx,#rl-csv,#rl-print,#bg-q,[data-bg],#in-per,#in-de,#in-ate,#fx-visao,#fx-linhas,#fx-assin,[data-fxcel],#menu-btn,[data-menu-modo],#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
+const LIVRES = "#cp-filtro,#cp-busca,#ce-emp,[data-p],#sim-v,#fx-sit,#fx-mes,#fx-cat,#fx-tipo,#fx-q,#em-f-vinc,#em-todas,[data-emsel],#em-f-tipo,#em-f-status,#em-q,#fat-tipo,#fat-q,[data-sit],#f-plat,#f-status,#f-periodo,#f-prod,#f-etapa,#f-q,#as-q,#as-sit,[data-as],#cc-q,#cc-vinc,#cc-tipo,[data-cc],#cc-busca,#rl-tipo,#rl-de,#rl-ate,#rl-gerar,#rl-xlsx,#rl-csv,#rl-print,#bg-q,[data-bg],#in-per,#in-de,#in-ate,#fx-visao,#fx-linhas,#fx-assin,[data-fxcel],#menu-btn,[data-menu-modo],#lanc-x,#lanc-cancelar,[data-abrir-venda],[data-abrir],#vinc-busca";
 function aplicarLeitura(){
   if (!PERFIL) return;
   const tela = telaDe(abaAtual, subAtual), so = abaAtual!=="inicio" && !podeEditar(tela) && !(abaAtual==="config" && ["usuarios","setores"].includes(subAtual));
@@ -2159,7 +2161,7 @@ function renderEmit(){
   $("em-emp").value = selE || (empFiltro() && empFiltro()!=="sem" ? empFiltro() : (S.empresas.find(e=>e.nome.toUpperCase().includes(EMPRESA_PADRAO))||S.empresas[0]||{}).id);
   const fo=$("em-f-origem").value, fv=$("em-f-vinc").value, ft=$("em-f-tipo").value, fs=$("em-f-status").value, q=semAcentoTxt($("em-q").value), qn=q.replace(/\D/g,"");
   const base=(S.ext||[]).filter(passaEmpresaExt);
-  const lista=base.filter(x=>(!fo || (fo==="notazz" ? (x.origem||"notazz")==="notazz" : (x.origem||"notazz")!=="notazz")) && (!fv || (fv==="sem"?!x.venda_id:!!x.venda_id)) && (!ft||x.tipo_nf===ft) &&
+  const lista=(fv==="ocultas"?(S.extOcultas||[]).filter(passaEmpresaExt):base).filter(x=>(!fo || (fo==="notazz" ? (x.origem||"notazz")==="notazz" : (x.origem||"notazz")!=="notazz")) && (!fv || fv==="ocultas" || (fv==="sem"?!x.venda_id:!!x.venda_id)) && (!ft||x.tipo_nf===ft) &&
     (!fs || (fs==="autoriz"?/autoriz/i.test(x.status_notazz||""):fs==="cancel"?/cancel/i.test(x.status_notazz||""):!/autoriz|cancel/i.test(x.status_notazz||""))) &&
     (!q || semAcentoTxt([x.cliente_nome,x.cliente_email,x.numero].join(" ")).includes(q) || (qn.length>=3 && String(x.cliente_documento||"").includes(qn))));
   const aut=base.filter(x=>/autoriz/i.test(x.status_notazz||""));
@@ -2174,6 +2176,7 @@ function renderEmit(){
     const v=S.vendas.find(z=>z.id===x.venda_id);
     const st=x.status_notazz||"—", cls=/autoriz/i.test(st)?"p-ok":/cancel/i.test(st)?"p-mute":/rejeit|denegad/i.test(st)?"p-bad":"p-warn";
     return `<tr data-x="${x.id}">
+      <td>${!x.venda_id&&!x.ignorada?`<input type="checkbox" data-emsel="${x.id}" ${emSel.has(x.id)?"checked":""} aria-label="Selecionar nota">`:""}</td>
       <td>${x.emissao?dt(x.emissao).slice(0,8):"—"}</td><td>${esc(x.numero||"—")}</td><td>${x.tipo_nf==="nfe"?"NF-e":"NFS-e"}</td>
       <td class="trunc">${esc(x.empresa_id?nomeEmpresa(x.empresa_id):(x.emissor_cnpj?"CNPJ "+doc(x.emissor_cnpj)+" (não cadastrado)":"—"))}${(x.origem||"notazz")!=="notazz"?`<br><small class="note">${esc(x.origem==="vhsys"?"VHSYS":"Outro sistema")}</small>`:""}</td>
       <td class="trunc" title="${esc(x.cliente_email||"")}">${esc(x.cliente_nome||"—")}</td><td>${esc(doc(x.cliente_documento))}</td>
@@ -2181,15 +2184,38 @@ function renderEmit(){
       <td>${v?`<button type="button" class="btn link" data-abrir-venda="${v.id}">${esc(v.comprador_nome||"")} · ${esc(v.produto_nome||"")}</button><br><small class="note">por ${esc(VINC[x.vinculo]||x.vinculo||"")}${x.nota_id?" · nota prevista baixada":""}</small>`:'<span class="pill p-warn">Sem vínculo</span>'}</td>
       <td class="controls">${x.pdf_url?`<a class="btn link" href="${esc(x.pdf_url)}" target="_blank" rel="noopener">PDF</a>`:""}
         ${x.pdf_path?`<button type="button" class="btn link" data-arq="${esc(x.pdf_path)}">${x.pdf_espelho?"PDF espelho":"PDF"}</button>`:""}${x.xml_path?`<button type="button" class="btn link" data-arq="${esc(x.xml_path)}">XML</button>`:""}
-        ${v?`<button type="button" class="btn link danger" data-desvinc="${x.id}">Desvincular</button>`:`<button type="button" class="btn link" data-vinc="${x.id}">Vincular</button>`}</td>
-    </tr>${emAbrindo===x.id?`<tr><td colspan="10"><div class="merge-row">
+        ${x.ignorada?`<button type="button" class="btn link" data-reexibir="${x.id}">Reexibir</button><small class="note">oculta por ${esc(x.ignorada_por||"")}</small>`
+          : v?`<button type="button" class="btn link danger" data-desvinc="${x.id}">Desvincular</button>`:`<button type="button" class="btn link" data-vinc="${x.id}">Vincular</button><button type="button" class="btn link danger" data-excluir-ext="${x.id}">Excluir</button>`}</td>
+    </tr>${emAbrindo===x.id?`<tr><td colspan="11"><div class="merge-row">
       <input type="search" id="em-busca" placeholder="Buscar aluno por nome, CPF ou e-mail" value="${esc(x.cliente_documento||x.cliente_nome||"")}" style="min-width:260px">
       <select id="em-dest" style="min-width:320px"></select>
       <button type="button" class="btn primary" data-confirma-vinc="${x.id}">Vincular a esta venda</button>
       <button type="button" class="btn link" data-fechar-vinc>Fechar</button></div></td></tr>`:""}`;
   }).join("");
   if (emAbrindo) atualizarDestinos();
+  [...emSel].forEach(id=>{ if (!lista.some(x=>x.id===id && !x.venda_id)) emSel.delete(id); });
+  $("em-todas").checked = emSel.size>0 && lista.filter(x=>!x.venda_id&&!x.ignorada).every(x=>emSel.has(x.id));
+  $("em-lote").innerHTML = emSel.size ? `<div class="lote-prod" style="border:1px solid var(--line);border-radius:10px"><b>${emSel.size} nota${emSel.size===1?"":"s"} selecionada${emSel.size===1?"":"s"}</b>
+    <div class="controls"><button type="button" class="btn danger" id="em-excluir-lote">Excluir selecionadas</button><button type="button" class="btn link" id="em-limpar">Limpar seleção</button></div>
+    <small class="note">Notas do VHSYS, de outro sistema ou informadas à mão são apagadas (com os arquivos). Notas da Notazz ficam ocultas, para não voltarem na próxima busca; dá para reexibir no filtro "Ocultas".</small></div>` : "";
 }
+const emSel=new Set();
+async function excluirNotasExt(ids){
+  const { data, error } = await sb.rpc("excluir_notas_externas",{p_ids:ids});
+  if (error){ toast(/function|does not exist/i.test(error.message)?"Rode o SQL 20 no Supabase":"Não foi possível: "+error.message); return; }
+  const paths=(data||[]).flatMap(r=>[r.pdf_path,r.xml_path]).filter(Boolean);
+  if (paths.length) await sb.storage.from("anexos").remove(paths);
+  const exc=(data||[]).filter(r=>r.resultado==="excluida").length, oc=(data||[]).filter(r=>r.resultado==="oculta").length, vin=(data||[]).filter(r=>/vinculada/.test(r.resultado)).length;
+  toast([exc?`${exc} excluída(s)`:"", oc?`${oc} da Notazz ocultada(s)`:"", vin?`${vin} vinculada(s) não excluída(s): desvincule antes`:""].filter(Boolean).join(" · ")||"Nada a excluir");
+  emSel.clear(); await carregarTudo(false);
+}
+$("em-todas").addEventListener("change", e=>{ document.querySelectorAll("#em-rows [data-emsel]").forEach(c=>{ const id=Number(c.dataset.emsel); e.target.checked?emSel.add(id):emSel.delete(id); }); renderEmit(); });
+$("em-rows").addEventListener("change", e=>{ const c=e.target.closest("[data-emsel]"); if (!c) return; const id=Number(c.dataset.emsel); c.checked?emSel.add(id):emSel.delete(id); renderEmit(); });
+$("em-lote").addEventListener("click", async e=>{
+  if (e.target.id==="em-limpar"){ emSel.clear(); renderEmit(); return; }
+  if (e.target.id==="em-excluir-lote"){ if (e.target.dataset.ok!=="1"){ e.target.dataset.ok="1"; e.target.textContent=`Confirmar: excluir ${emSel.size}`; return; }
+    e.target.disabled=true; await excluirNotasExt([...emSel]); }
+});
 function atualizarDestinos(){
   const q=semAcentoTxt($("em-busca")?.value||""), qn=q.replace(/\D/g,"");
   const l=q.length<2?[]:S.vendas.filter(v=>v.tipo!=="parcela" && (semAcentoTxt([v.comprador_nome,v.comprador_email,v.produto_nome].join(" ")).includes(q) || (qn.length>=3 && String(v.comprador_documento||"").includes(qn))))
@@ -2200,6 +2226,10 @@ function atualizarDestinos(){
 $("em-q").addEventListener("input",renderEmit);
 $("em-rows").addEventListener("input", e=>{ if(e.target.id==="em-busca") atualizarDestinos(); });
 $("em-rows").addEventListener("click", async e=>{
+  const ex=e.target.closest("[data-excluir-ext]");
+  if (ex){ if (ex.dataset.ok!=="1"){ ex.dataset.ok="1"; ex.textContent="Confirmar exclusão"; return; } await excluirNotasExt([Number(ex.dataset.excluirExt)]); return; }
+  const rx=e.target.closest("[data-reexibir]");
+  if (rx){ const { error } = await sb.rpc("reexibir_nota_externa",{p_id:Number(rx.dataset.reexibir)}); if (error){ toast("Não foi possível: "+error.message); return; } toast("Nota reexibida"); await carregarTudo(false); return; }
   const t=e.target;
   if (t.closest("[data-abrir-venda]")){ abrirLancamento(Number(t.closest("[data-abrir-venda]").dataset.abrirVenda)); return; }
   if (t.dataset.arq){ const w=window.open("","_blank"); const { data, error } = await sb.storage.from("anexos").createSignedUrl(t.dataset.arq, 3600);
@@ -3364,7 +3394,7 @@ function renderCandidatosNota(){
     el.innerHTML=cabec+`<div class="card"><div class="sec-title">Conciliada com</div><span>${v?`<button type="button" class="btn link" data-abrir-venda="${v.id}">${esc(v.comprador_nome||"—")} · ${esc(v.produto_nome||"")} · ${brl(v.valor_bruto)}</button>`:"Venda #"+x.venda_id}</span><small class="note">por ${esc(x.vinculado_por||x.vinculo||"—")}</small>
       <div class="controls"><button type="button" class="btn danger" data-cc-desfaz="${x.id}">Desfazer conciliação</button></div></div>`; return; }
   const busca=($("cc-busca")&&$("cc-busca").value)||"", cands=candidatosNota(x,busca);
-  el.innerHTML=cabec+`<input type="search" id="cc-busca" value="${esc(busca)}" placeholder="Procurar outra venda: nome, CPF, transação" aria-label="Procurar venda">
+  el.innerHTML=cabec+`<div class="controls" style="margin:6px 0"><button type="button" class="btn link danger" data-cc-excluir="${x.id}">Excluir esta nota (não é de nenhuma venda)</button></div><input type="search" id="cc-busca" value="${esc(busca)}" placeholder="Procurar outra venda: nome, CPF, transação" aria-label="Procurar venda">
     ${cands.length?cands.map(({v,s,why})=>`<div class="cand"><span><b>${esc(v.comprador_nome||"—")}</b> · ${brl(v.valor_bruto)}</span><small class="note">${esc(v.produto_nome||"")} · ${dt(v.data_venda).slice(0,8)} · ${esc(nomeEmpresa(v.empresa_id))} · ${esc(doc(v.comprador_documento))}</small>
       <span class="score">${why.join(" · ")}${s?` · pontuação ${s}`:""}</span><div class="controls"><button type="button" class="btn primary" data-conciliar="${v.id}">Conciliar</button><button type="button" class="btn link" data-abrir-venda="${v.id}">Ver venda</button></div></div>`).join("")
       :'<p class="note">Nenhuma venda provável. Procure pelo nome, CPF ou transação no campo acima.</p>'}`;
@@ -3379,6 +3409,8 @@ $("cc-cands").addEventListener("click", async e=>{
   if (c){ c.disabled=true; const { data, error } = await sb.rpc("vincular_nota_externa",{p_ext:ccSel, p_venda:Number(c.dataset.conciliar)}); c.disabled=false;
     if (error){ toast("Não foi possível: "+error.message); return; }
     toast(data==="vinculada"?"Nota conciliada com a venda":"Nota conciliada; a nota prevista da venda foi marcada como emitida"); ccSel=null; await carregarTudo(false); return; }
+  const cx=e.target.closest("[data-cc-excluir]");
+  if (cx){ if (cx.dataset.ok!=="1"){ cx.dataset.ok="1"; cx.textContent="Confirmar exclusão da nota"; return; } ccSel=null; await excluirNotasExt([Number(cx.dataset.ccExcluir)]); return; }
   const d=e.target.closest("[data-cc-desfaz]");
   if (d){ if (d.dataset.ok!=="1"){ d.dataset.ok="1"; d.textContent="Confirmar"; return; }
     const { error } = await sb.rpc("desvincular_nota_externa",{p_ext:Number(d.dataset.ccDesfaz)}); if (error){ toast("Não foi possível: "+error.message); return; }
