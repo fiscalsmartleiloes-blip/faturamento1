@@ -2854,7 +2854,7 @@ $("cp-editor").addEventListener("change", async e=>{
   let val=el.value;
   if (f==="percentual"){ const n=Number(val); if(isNaN(n)||n<0||n>100){ toast("Percentual deve estar entre 0 e 100"); return; } val=n/100; }
   else if (f==="empresa_id"||f==="coprodutor_id") val = val?Number(val):null;
-  if (await salvar("produto_split", sid, {[f]:val})){ s[f]=val; renderEditorProduto(); renderCfgListaLeve(); }
+  if (await salvar("produto_split", sid, {[f]:val})){ s[f]=val; renderEditorProduto(); renderCfgListaLeve(); splitMudou(); }
 });
 $("cp-editor").addEventListener("click", async e=>{
   const p=S.produtos.find(x=>x.id===selProduto); if(!p) return;
@@ -2889,15 +2889,27 @@ $("cp-editor").addEventListener("click", async e=>{
     if (et==="principal" && !S.splits.some(s=>s.produto_id===p.id&&s.etapa==="principal")) novo.percentual=1;
     const { data, error } = await sb.from("produto_split").insert(novo).select().single();
     if (error){ toast("Não foi possível adicionar: "+error.message); return; }
-    S.splits.push(data); renderEditorProduto(); renderCfgListaLeve(); toast("Linha adicionada");
+    S.splits.push(data); renderEditorProduto(); renderCfgListaLeve(); toast("Linha adicionada"); splitMudou();
   }
   if (del){
     const sid=Number(del.dataset.del);
     const { error } = await sb.from("produto_split").delete().eq("id",sid);
     if (error){ toast("Não foi possível remover: "+error.message); return; }
-    S.splits=S.splits.filter(s=>s.id!==sid); renderEditorProduto(); renderCfgListaLeve(); toast("Linha removida");
+    S.splits=S.splits.filter(s=>s.id!==sid); renderEditorProduto(); renderCfgListaLeve(); toast("Linha removida"); splitMudou();
   }
 });
+/* depois de mudar o split, o banco recalcula as notas previstas das vendas do produto; o site busca o resultado */
+let splitTimer=null;
+function splitMudou(){
+  clearTimeout(splitTimer);
+  splitTimer=setTimeout(async ()=>{
+    const r=await buscarTodas(()=>{ const d=desdeCarga(); let q=sb.from("vw_faturamento").select("*"); if (d) q=q.or(`data_venda.gte.${d},situacao.in.(${PEND_FAT})`); return q.order("liberada_em").order("id"); });
+    if (!r.error){ S.fat=r.data; indexar(); renderTudo(); }
+    const p=S.produtos.find(x=>x.id===selProduto);
+    const travadas = p ? new Set((S.fat||[]).filter(n=>["enviada","emitida","cancelar","cancelada"].includes(n.situacao) && S.vendas.some(v=>v.id===n.venda_id && v.produto_id===p.id)).map(n=>n.venda_id)).size : 0;
+    toast("Notas previstas recalculadas com o novo split"+(travadas?` · ${travadas} venda(s) com nota já enviada/emitida não mudam`:""));
+  }, 1500);
+}
 function renderCfgListaLeve(){ const y=$("cp-lista").scrollTop; const keep=selProduto; renderCfgProdutos(); selProduto=keep; $("cp-lista").scrollTop=y; }
 
 /* --- empresas --- */
