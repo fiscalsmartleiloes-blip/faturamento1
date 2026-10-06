@@ -910,7 +910,7 @@ function doc(d){ const n=String(d||"").replace(/\D/g,"");
   if(n.length===11) return n.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,"$1.$2.$3-$4");
   if(n.length===14) return n.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,"$1.$2.$3/$4-$5");
   return d||"—"; }
-function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>t.hidden=true,2600); }
+function toast(msg,ms){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>t.hidden=true,ms||2600); }
 async function salvar(tabela, id, campos, msg="Salvo"){
   const { error } = await sb.from(tabela).update(campos).eq("id", id);
   if (error){ toast("Não foi possível salvar: "+error.message); return false; }
@@ -2907,7 +2907,7 @@ function splitMudou(){
     if (!r.error){ S.fat=r.data; indexar(); renderTudo(); }
     const p=S.produtos.find(x=>x.id===selProduto);
     const travadas = p ? new Set((S.fat||[]).filter(n=>["enviada","emitida","cancelar","cancelada"].includes(n.situacao) && S.vendas.some(v=>v.id===n.venda_id && v.produto_id===p.id)).map(n=>n.venda_id)).size : 0;
-    toast("Notas previstas recalculadas com o novo split"+(travadas?` · ${travadas} venda(s) com nota já enviada/emitida não mudam`:""));
+    toast("Notas previstas recalculadas com o novo split"+(travadas?` · em ${travadas} venda(s) com nota já emitida, as emitidas ficam como estão e só o que falta emitir foi ajustado`:""),7000);
   }, 1500);
 }
 function renderCfgListaLeve(){ const y=$("cp-lista").scrollTop; const keep=selProduto; renderCfgProdutos(); selProduto=keep; $("cp-lista").scrollTop=y; }
